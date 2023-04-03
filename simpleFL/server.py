@@ -13,8 +13,15 @@ from collections import OrderedDict
 from typing import Callable, Dict, Optional, Tuple, List
 from sklearn.metrics import classification_report, confusion_matrix
 import time
-import os
 
+server_start = time.time()
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+torch.cuda.manual_seed_all(0)
+np.random.seed(0)
+
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+batch_size = int(sys.argv[2])
 class model(torch.nn.Module):
     def __init__(self):
         super(model, self).__init__()
@@ -47,9 +54,18 @@ class model(torch.nn.Module):
 
         return F.softmax(x, dim = 0)
 
+MIN_AVAILABLE_CLIENTS = int(sys.argv[1])
+NUM_ROUND = 5
+NUM_EPOCHS = 1
+file_n = 4968
+# if file_n % MIN_AVAILABLE_CLIENTS > 0:
+#     DIV = file_n // MIN_AVAILABLE_CLIENTS +1
+# else:
+#     DIV = file_n//MIN_AVAILABLE_CLIENTS
+DIV = 0
 
 def load_data(batch_size):
-    with open('../Data/testset.pickle', 'rb') as tts:
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/testset.pickle', 'rb') as tts:
         testset = pickle.load(tts)
 
     testloader = DataLoader(testset, batch_size = batch_size)
@@ -57,7 +73,7 @@ def load_data(batch_size):
 
     return 0, testloader, num_examples
 
-def test(net, testloader, DEVICE):
+def test(net, testloader):
     """Validate the network on the entire test set."""
     criterion = torch.nn.CrossEntropyLoss()
     correct, total, loss = 0, 0, 0.0
@@ -119,43 +135,22 @@ def evaluate(
     return 0, {"err":0}
 
 
-
-def main():
-
-    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"]= "2"
-    
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    server_start = time.time()
-    torch.manual_seed(0)
-    torch.cuda.manual_seed(0)
-    torch.cuda.manual_seed_all(0)
-    np.random.seed(0)
-
-    batch_size = int(sys.argv[2])
-    MIN_AVAILABLE_CLIENTS = int(sys.argv[1])
-    NUM_ROUND = 5
-    NUM_EPOCHS = 1
-    file_n = 4968
-    DIV = 0
-
-    strategy = fl.server.strategy.FedAvg(
+strategy = fl.server.strategy.FedAvg(
     fraction_fit = 1,
     min_fit_clients = MIN_AVAILABLE_CLIENTS,
     min_available_clients = MIN_AVAILABLE_CLIENTS,
     on_fit_config_fn = get_on_fit_config_fn(),
     initial_parameters=fl.common.ndarrays_to_parameters(get_parameters(model())),
     evaluate_fn = evaluate
-    )
-    
-    server_end = time.time()
-    print("-------------------SERVER EXECUTED---------------------")
-    print(f"Server Execution Time: {server_end - server_start}")
-    fl.server.start_server(
-        config = fl.server.ServerConfig(num_rounds = NUM_ROUND), 
-        server_address = '117.17.189.210:8080',
-        strategy = strategy)
+)
 
-if __name__ == "__main__":
-    main()
+
+
+server_end = time.time()
+print("-------------------SERVER EXECUTED---------------------")
+print(f"Server Execution Time: {server_end - server_start}")
+fl.server.start_server(
+    config = fl.server.ServerConfig(num_rounds = NUM_ROUND), 
+    server_address = '117.17.189.210:8080',
+    strategy = strategy)
+

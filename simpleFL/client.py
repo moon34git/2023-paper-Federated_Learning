@@ -16,7 +16,10 @@ import torchvision.transforms as transforms
 from collections import OrderedDict
 import pickle
 import time
-import os
+
+time.sleep(5)
+
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class model(torch.nn.Module):
     def __init__(self):
@@ -49,7 +52,23 @@ class model(torch.nn.Module):
         x = self.fc2(x)
 
         return F.softmax(x, dim = 0)
-    
+
+client_size = int(sys.argv[1])
+client_num = int(sys.argv[2])
+batch_size = int(sys.argv[3])
+tr_data_size = 5000
+ts_data_size = 10000
+
+client_data_size_tr = int(tr_data_size / client_size)
+client_data_size_ts = int(ts_data_size / client_size)
+
+start_index_tr = client_num * client_data_size_tr
+start_index_ts = client_num * client_data_size_ts
+
+end_index_tr = client_data_size_tr * (client_num + 1)
+end_index_ts = client_data_size_ts * (client_num + 1)
+
+
 def load_data(start_tr, end_tr, start_ts, end_ts, batch_size):
     with open('../Data/trainset5000.pickle', 'rb') as trs:
         train = pickle.load(trs)
@@ -74,7 +93,7 @@ def load_data(start_tr, end_tr, start_ts, end_ts, batch_size):
 
     return trainloader, testloader, num_examples
 
-def train(net, trainloader, epochs, DEVICE):
+def train(net, trainloader, epochs):
     """Train the network on the training set."""
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters())
@@ -89,7 +108,8 @@ def train(net, trainloader, epochs, DEVICE):
 
         print(f"Training Loss: {loss:>7f}\n")
         
-def test(net, testloader, DEVICE):
+
+def test(net, testloader):
     """Validate the network on the entire test set."""
     criterion = torch.nn.CrossEntropyLoss()
     correct, total, loss = 0, 0, 0.0
@@ -107,68 +127,41 @@ def test(net, testloader, DEVICE):
     print(f"Test Accuracy {accuracy}\n")
     return loss, accuracy
 
+net = model().to(DEVICE)
 
-def main():
-    time.sleep(5)
+trainloader, testloader, num_examples = load_data(start_index_tr, end_index_tr, start_index_ts, end_index_ts, batch_size)
 
-    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"]= "2"
+# ORDER : flClient - get_parameters - fit - get_parameters - evaluate
+
+class flClient(fl.client.NumPyClient):
+    def __init__(self):
+        print("-----------------------FLOWER CLIENT EXECUTED---------------------")
     
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    def get_parameters(self, config):   # `get_parameters`: 현재 로컬 모델 매개변수 반환
+        result = [val.cpu().numpy() for _, val in net.state_dict().items()]
+        # print(f"Get on client (0, get_parameter): {result[0][0][0][0][0]:>4f}")
+        # print(f"Get on client (7, get_parameter): {result[7][0]:>4f}")
+        return result
 
-    client_size = int(sys.argv[1])
-    client_num = int(sys.argv[2])
-    batch_size = int(sys.argv[3])
-    tr_data_size = 5000
-    ts_data_size = 10000
+    def set_parameters(self, parameters):
+        params_dict = zip(net.state_dict().keys(), parameters)
+        state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
+        net.load_state_dict(state_dict, strict = True)
 
-    client_data_size_tr = int(tr_data_size / client_size)
-    client_data_size_ts = int(ts_data_size / client_size)
+    def fit(self, parameters, config):
+        # print(f"Before set_parameter in FIT fn(0): {parameters[0][0][0][0][0]:>4f}")
+        # print(f"Before set_parameter in FIT fn(7): {parameters[7][0]:>4f}")
+        self.set_parameters(parameters)
+        train(net, trainloader, epochs = 1)
+        # print(f"After set_parameter in FIT fn (0): {self.get_parameters(config={})[0][0][0][0][0]:>4f}")
+        # print(f"After set_parameter in FIT fn (7): {self.get_parameters(config={})[7][0]:>4f}")
+        return self.get_parameters(config={}), num_examples["trainset"], {}
 
-    start_index_tr = client_num * client_data_size_tr
-    start_index_ts = client_num * client_data_size_ts
+    def evaluate(self, parameters, config):
+        loss, accuracy = test(net, testloader)
+        return float(loss), num_examples["testset"], {"accuracy": float(accuracy)}
 
-    end_index_tr = client_data_size_tr * (client_num + 1)
-    end_index_ts = client_data_size_ts * (client_num + 1)
-
-    net = model().to(DEVICE)
-
-    trainloader, testloader, num_examples = load_data(start_index_tr, end_index_tr, start_index_ts, end_index_ts, batch_size)
-
-    # ORDER : flClient - get_parameters - fit - get_parameters - evaluate
-
-    class flClient(fl.client.NumPyClient):
-        def __init__(self):
-            print("-----------------------FLOWER CLIENT EXECUTED---------------------")
-        
-        def get_parameters(self, config):   # `get_parameters`: 현재 로컬 모델 매개변수 반환
-            result = [val.cpu().numpy() for _, val in net.state_dict().items()]
-            # print(f"Get on client (0, get_parameter): {result[0][0][0][0][0]:>4f}")
-            # print(f"Get on client (7, get_parameter): {result[7][0]:>4f}")
-            return result
-
-        def set_parameters(self, parameters):
-            params_dict = zip(net.state_dict().keys(), parameters)
-            state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
-            net.load_state_dict(state_dict, strict = True)
-
-        def fit(self, parameters, config):
-            # print(f"Before set_parameter in FIT fn(0): {parameters[0][0][0][0][0]:>4f}")
-            # print(f"Before set_parameter in FIT fn(7): {parameters[7][0]:>4f}")
-            self.set_parameters(parameters)
-            train(net, trainloader, epochs = 1)
-            # print(f"After set_parameter in FIT fn (0): {self.get_parameters(config={})[0][0][0][0][0]:>4f}")
-            # print(f"After set_parameter in FIT fn (7): {self.get_parameters(config={})[7][0]:>4f}")
-            return self.get_parameters(config={}), num_examples["trainset"], {}
-
-        def evaluate(self, parameters, config):
-            loss, accuracy = test(net, testloader)
-            return float(loss), num_examples["testset"], {"accuracy": float(accuracy)}
-
-    client_start = time.time()
-    fl.client.start_numpy_client(server_address="117.17.189.210:8080", client=flClient())
-    client_end = time.time()
-    print(f"Client Execution Time: {client_end - client_start}")
-    
-if __name__ == "__main__":
-    main()
+client_start = time.time()
+fl.client.start_numpy_client(server_address="117.17.189.210:8080", client=flClient())
+client_end = time.time()
+print(f"Client Execution Time: {client_end - client_start}")
