@@ -18,13 +18,12 @@ import pickle
 import time
 import os
 
+# os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+
 time.sleep(5)
 
-
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= "2"
-
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class model(torch.nn.Module):
     def __init__(self):
@@ -75,9 +74,9 @@ end_index_ts = client_data_size_ts * (client_num + 1)
 
 
 def load_data(start_tr, end_tr, start_ts, end_ts, batch_size):
-    with open('../Data/trainset5000.pickle', 'rb') as trs:
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/trainset5000.pickle', 'rb') as trs:
         train = pickle.load(trs)
-    with open('../Data/testset.pickle', 'rb') as tts:
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/testset.pickle', 'rb') as tts:
         test = pickle.load(tts)
 
     print("-----------INDEX INFO-----------")
