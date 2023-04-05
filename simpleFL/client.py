@@ -16,8 +16,13 @@ import torchvision.transforms as transforms
 from collections import OrderedDict
 import pickle
 import time
+import os
 
 time.sleep(5)
+
+
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]= "2"
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

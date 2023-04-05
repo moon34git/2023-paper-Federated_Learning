@@ -13,6 +13,7 @@ from collections import OrderedDict
 from typing import Callable, Dict, Optional, Tuple, List
 from sklearn.metrics import classification_report, confusion_matrix
 import time
+import os
 
 server_start = time.time()
 torch.manual_seed(0)
@@ -20,7 +21,12 @@ torch.cuda.manual_seed(0)
 torch.cuda.manual_seed_all(0)
 np.random.seed(0)
 
+
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]= "2"
+
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 batch_size = int(sys.argv[2])
 class model(torch.nn.Module):
     def __init__(self):
