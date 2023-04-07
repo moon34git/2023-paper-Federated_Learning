@@ -22,9 +22,10 @@ torch.cuda.manual_seed_all(0)
 np.random.seed(0)
 
 # os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-# os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = 'cpu'
 batch_size = int(sys.argv[2])
 class model(torch.nn.Module):
     def __init__(self):

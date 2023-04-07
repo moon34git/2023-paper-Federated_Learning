@@ -19,12 +19,12 @@ import time
 import os
 
 # os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-# os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 time.sleep(5)
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = 'cpu'
 class model(torch.nn.Module):
     def __init__(self):
         super(model, self).__init__()
