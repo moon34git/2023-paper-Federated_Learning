@@ -75,7 +75,7 @@ class Net(torch.nn.Module):
         for d in range(len(dims) - 1):
             self.layers += [Layer(dims[d], dims[d + 1]).cuda()]
 
-    def predict(self, x):
+    def test(self, x):
         goodness_per_label = []
         for label in range(10):
             h = overlay_y_on_x(x, label)
@@ -158,18 +158,26 @@ class FlowerClient(fl.client.NumPyClient):
         # Use values provided by the config
         print(f"[Client {self.cid}, round {server_round}] fit, config: {config}")
         set_parameters(self.net, parameters)
-        train(self.net, self.trainloader, epochs=local_epochs)
+
+        x, y = next(iter(self.trainloader))
+        x, y = x.to(DEVICE), y.to(DEVICE)
+        x_pos = overlay_y_on_x(x, y)
+        rnd = torch.randperm(x.size(0))
+        x_neg = overlay_y_on_x(x, y[rnd])
+        self.net.train(x_pos, x_neg)
+
+        # self.net.train(self.net, self.trainloader, epochs=local_epochs)
 
         return get_parameters(self.net), len(self.trainloader), {}
 
     def evaluate(self, parameters, config):
         print(f"[Client {self.cid}] evaluate, config: {config}")
         set_parameters(self.net, parameters)
-        loss, accuracy = test(self.net, self.valloader)
+        loss, accuracy = self.net.test(self.net, self.valloader)
         return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
 
 def client_fn(cid) -> FlowerClient:
-    net = Net_former().to(DEVICE)
+    net = Net().to(DEVICE)
     trainloader = trainloaders[int(cid)]
     valloader = valloaders[int(cid)]
     return FlowerClient(cid, net, trainloader, valloader)
@@ -179,10 +187,10 @@ def evaluate(
     parameters: fl.common.NDArrays,
     config: Dict[str, fl.common.Scalar],
 ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
-    net = Net_former().to(DEVICE)
+    net = Net([784, 500, 500]).to(DEVICE)
     valloader = valloaders[0]
     set_parameters(net, parameters)  # Update model with the latest parameters
-    loss, accuracy = test(net, valloader)
+    loss, accuracy = net.test(net, valloader)
     print(f"Server-side evaluation loss {loss} / accuracy {accuracy}")
     return loss, {"accuracy": accuracy}
 
@@ -201,7 +209,7 @@ def fit_config(server_round: int):
 # trainloaders, valloaders, testloader = load_datasets(NUM_CLIENTS)
 trainloaders, valloaders, testloader = load_datasets(NUM_CLIENTS)
 # Create an instance of the model and get the parameters
-params = get_parameters(Net_former())
+params = get_parameters(Net([784, 500, 500]))
 
 # Pass parameters to the Strategy for server-side parameter initialization
 strategy = fl.server.strategy.FedAvg(
