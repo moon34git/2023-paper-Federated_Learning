@@ -26,7 +26,6 @@ def load_data(num_clients: int):
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/acoustic.pickle', 'rb') as f:
         data1 = pickle.load(f)
     data1 = data1.iloc[:5000]
-    data1['class'] = data1['class'].apply(lambda x: 0 if x == 1 else (1 if x == 2 else 2)) 
 
     X = data1[[str(x) for x in range(50)]]
     y = data1['class']
@@ -35,7 +34,7 @@ def load_data(num_clients: int):
     X = torch.tensor(X, dtype = torch.float32)
     y = torch.tensor(y, dtype = torch.long)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state=34)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 34)
 
     torchvisionType_for_trainVal = []
     for i in range(len(X_train)):
@@ -62,20 +61,40 @@ def load_data(num_clients: int):
     return trainloaders, valloaders, testloader
 
 
+# class FCNet(nn.Module):
+#     def __init__(self):
+#         super(FCNet, self).__init__()
+#         self.fc1 = nn.Linear(50, 32)
+#         self.fc2 = nn.Linear(32, 32)
+#         self.fc3 = nn.Linear(32, 1)
+        # self.dropout = nn.Dropout(0.25)
+
+#     def forward(self, x):
+#         x = F.relu(self.fc1(x))
+#         x = self.dropout(x)
+#         x = F.relu(self.fc2(x))
+#         x = self.dropout(x)
+#         x = self.fc3(x)
+#         return x
+    
 class FCNet(nn.Module):
     def __init__(self):
-        super(FCNet, self).__init__()
-        self.fc1 = nn.Linear(50, 32)
-        self.fc2 = nn.Linear(32,32)
-        self.fc3 = nn.Linear(32,3)
+        super().__init__()
+        self.layer1 = nn.Linear(50, 32)
+        self.act1 = nn.ReLU()
+        self.layer2 = nn.Linear(32, 32)
+        self.act2 = nn.ReLU()
+        self.output = nn.Linear(32, 1)
         self.dropout = nn.Dropout(0.25)
-
+        self.sigmoid = nn.Sigmoid()
+ 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
+        x = self.act1(self.layer1(x))
         x = self.dropout(x)
-        x = F.relu(self.fc2(x))
+        x = self.act2(self.layer2(x))
         x = self.dropout(x)
-        x = self.fc3(x)
+        x = self.sigmoid(self.output(x))
+        # x = self.output(x)
         return x
     
 def get_parameters(net) -> List[np.ndarray]:
@@ -86,39 +105,88 @@ def set_parameters(net, parameters: List[np.ndarray]):
     state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
     net.load_state_dict(state_dict, strict=True)
 
+# def train(net, trainloader, epochs: int):
+#     """Train the network on the training set."""
+#     # criterion = torch.nn.CrossEntropyLoss()
+#     criterion = torch.nn.BCELoss()
+#     optimizer = torch.optim.Adam(net.parameters())
+#     net.train()
+#     for epoch in range(epochs):
+#         correct, total, epoch_loss = 0, 0, 0.0
+#         for x, y in trainloader:
+#             x, y = x.to(DEVICE), y.to(DEVICE)
+#             optimizer.zero_grad()
+#             y = y.unsqueeze(1)
+#             output = net(x)
+#             loss = criterion(output.to(torch.float32), y.to(torch.float32))
+#             loss.backward()
+#             optimizer.step()
+#             # Metrics
+#             epoch_loss += loss
+#             total += y.size(0)
+#             correct += (output.argmax(1) == y).sum().item()
+#         epoch_loss /= len(trainloader.dataset)
+#         epoch_acc = correct / total
+#         print(f"Epoch {epoch+1}: train loss {epoch_loss}, accuracy {epoch_acc}")
+
 def train(net, trainloader, epochs: int):
     """Train the network on the training set."""
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(net.parameters())
+    # criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.BCELoss()
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.002)
     net.train()
     for epoch in range(epochs):
         correct, total, epoch_loss = 0, 0, 0.0
         for x, y in trainloader:
             x, y = x.to(DEVICE), y.to(DEVICE)
             optimizer.zero_grad()
+            y = y.unsqueeze(1)
             output = net(x)
-            loss = criterion(net(x), y)
+            loss = criterion(output.to(torch.float32), y.to(torch.float32))
             loss.backward()
             optimizer.step()
             # Metrics
             epoch_loss += loss
             total += y.size(0)
-            correct += (output.argmax(1) == y).sum().item()
+            predicted = (output > 0.5).float()
+            correct += (predicted == y).sum()
         epoch_loss /= len(trainloader.dataset)
         epoch_acc = correct / total
         print(f"Epoch {epoch+1}: train loss {epoch_loss}, accuracy {epoch_acc}")
 
+
+# def test(net, testloader):
+#     """Evaluate the network on the entire test set."""
+#     # criterion = torch.nn.CrossEntropyLoss()
+#     criterion = torch.nn.BCELoss()
+#     correct, total, loss = 0, 0, 0.0
+#     net.eval()
+#     with torch.no_grad():
+#         for x, y in testloader:
+#             x, y = x.to(DEVICE), y.to(DEVICE)
+#             y = y.unsqueeze(1)
+#             outputs = net(x)
+#             loss += criterion(outputs.to(torch.float32), y.to(torch.float32)).item()
+#             _, predicted = torch.max(outputs.data, 1)
+#             total += y.size(0)
+#             correct += (predicted == y).sum().item()
+#     loss /= len(testloader.dataset)
+#     accuracy = correct / total
+#     return loss, accuracy
+
 def test(net, testloader):
     """Evaluate the network on the entire test set."""
-    criterion = torch.nn.CrossEntropyLoss()
+    # criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.BCELoss()
     correct, total, loss = 0, 0, 0.0
     net.eval()
     with torch.no_grad():
         for x, y in testloader:
             x, y = x.to(DEVICE), y.to(DEVICE)
+            y = y.unsqueeze(1)
             outputs = net(x)
-            loss += criterion(outputs, y).item()
-            _, predicted = torch.max(outputs.data, 1)
+            loss += criterion(outputs.to(torch.float32), y.to(torch.float32)).item()
+            predicted = (outputs > 0.5).float()
             total += y.size(0)
             correct += (predicted == y).sum().item()
     loss /= len(testloader.dataset)
@@ -186,7 +254,7 @@ def fit_config(server_round: int):
 
     config = {
         "server_round": server_round,  # The current round of federated learning
-        "local_epochs": 5,  #
+        "local_epochs": 1,  #
     }
     return config
 
