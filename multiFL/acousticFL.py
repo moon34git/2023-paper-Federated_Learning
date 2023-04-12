@@ -8,6 +8,7 @@ import torch.nn.functional as F
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split, Dataset
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 import pickle
 from tqdm import tqdm
 import flwr as fl
@@ -29,7 +30,11 @@ def load_data(num_clients: int):
 
     X = data1[[str(x) for x in range(50)]]
     y = data1['class']
-    X = X.values
+
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+
+    # X = X.values
     y = y.values
     X = torch.tensor(X, dtype = torch.float32)
     y = torch.tensor(y, dtype = torch.long)
@@ -133,7 +138,7 @@ def train(net, trainloader, epochs: int):
     """Train the network on the training set."""
     # criterion = torch.nn.CrossEntropyLoss()
     criterion = torch.nn.BCELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.002)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     net.train()
     for epoch in range(epochs):
         correct, total, epoch_loss = 0, 0, 0.0
