@@ -6,7 +6,12 @@ from torch.optim import Adam
 from torchvision.datasets import MNIST
 from torchvision.transforms import Compose, ToTensor, Normalize, Lambda
 from torch.utils.data import DataLoader
+import os
 
+os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+
+DEVICE = torch.device("cuda") 
 
 def MNIST_loaders(train_batch_size=50000, test_batch_size=10000):
 
@@ -44,7 +49,7 @@ class Net(torch.nn.Module):
         super().__init__()
         self.layers = []
         for d in range(len(dims) - 1):
-            self.layers += [Layer(dims[d], dims[d + 1]).cuda()]
+            self.layers += [Layer(dims[d], dims[d + 1]).to(DEVICE)]
 
     def predict(self, x):
         goodness_per_label = []
@@ -75,10 +80,15 @@ class Layer(nn.Linear):
         self.num_epochs = 1000
 
     def forward(self, x):
+        print('-------------------------------------------------Layer forward Start-------------------------------------------------')
         x_direction = x / (x.norm(2, 1, keepdim=True) + 1e-4)
-        return self.relu(
-            torch.mm(x_direction, self.weight.T) +
-            self.bias.unsqueeze(0))
+        print(f'x: {x}, x_direction: {x_direction.shape}, weight: {self.weight.T.shape}, bias: {self.bias}')
+        matmul = torch.matmul(x_direction, self.weight.T)
+        print(f'matmul: {matmul}')
+        bias = self.bias.unsqueeze(0)
+        output = self.relu(matmul + bias)
+        print('-------------------------------------------------Layer forward Complete-------------------------------------------------')
+        return output
 
     def train(self, x_pos, x_neg):
         for i in tqdm(range(self.num_epochs)):
@@ -97,33 +107,23 @@ class Layer(nn.Linear):
         return self.forward(x_pos).detach(), self.forward(x_neg).detach()
 
     
-def visualize_sample(data, name='', idx=0):
-    reshaped = data[idx].cpu().reshape(28, 28)
-    plt.figure(figsize = (4, 4))
-    plt.title(name)
-    plt.imshow(reshaped, cmap="gray")
-    plt.show()
-    
-    
 if __name__ == "__main__":
     torch.manual_seed(1234)
     train_loader, test_loader = MNIST_loaders()
 
-    net = Net([784, 500, 500])
+    net = Net([784, 500, 500]).to(DEVICE)
     x, y = next(iter(train_loader))
-    x, y = x.cuda(), y.cuda()
+    x, y = x.to(DEVICE), y.to(DEVICE)
     x_pos = overlay_y_on_x(x, y)
     rnd = torch.randperm(x.size(0))
     x_neg = overlay_y_on_x(x, y[rnd])
     
-    for data, name in zip([x, x_pos, x_neg], ['orig', 'pos', 'neg']):
-        visualize_sample(data, name)
     
     net.train(x_pos, x_neg)
 
     print('train error:', 1.0 - net.predict(x).eq(y).float().mean().item())
 
     x_te, y_te = next(iter(test_loader))
-    x_te, y_te = x_te.cuda(), y_te.cuda()
+    x_te, y_te = x_te.to(DEVICE), y_te.to(DEVICE)
 
     print('test error:', 1.0 - net.predict(x_te).eq(y_te).float().mean().item())
