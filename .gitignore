@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+Data/acoustic.pickle
+Data/combined.pickle
+Data/seismic.pickle

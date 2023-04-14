@@ -24,29 +24,17 @@ print(
 
 NUM_CLIENTS = 2
 
-def load_datasets(num_clients: int):
+def load_data(num_clients: int):
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/trainset5000.pickle', 'rb') as trs:
+        trainset = pickle.load(trs)
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/testset.pickle', 'rb') as tts:
+        testset = pickle.load(tts)
 
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,)),
-        transforms.Lambda(lambda x: torch.flatten(x))])
-
-    trainset = DataLoader(
-        MNIST('.', train=True,
-              download=True,
-              transform=transform),
-        batch_size= 50000, shuffle=True)
-
-    testset = DataLoader(
-        MNIST('.', train=False,
-              download=True,
-              transform=transform),
-        batch_size= 10000, shuffle=False)
-    
     partition_size = len(trainset) // num_clients
     lengths = [partition_size] * num_clients
     datasets = random_split(trainset, lengths, torch.Generator().manual_seed(42))
 
+    # Split each partition into train/val and create DataLoader
     trainloaders = []
     valloaders = []
     for ds in datasets:

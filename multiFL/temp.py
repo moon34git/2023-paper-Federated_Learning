@@ -24,11 +24,11 @@ NUM_CLIENTS = 5
 
 def load_data(num_clients: int):
     # Download and transform CIFAR-10 (train and test)
-    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/combined.pickle', 'rb') as f:
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/seismic.pickle', 'rb') as f:
         data1 = pickle.load(f)
-    data1 = data1.iloc[:5000]
+    data1 = data1.iloc[:7000]
 
-    X = data1[[str(x) for x in range(100)]]
+    X = data1[[str(x) for x in range(50)]]
     y = data1['class']
 
     scaler = StandardScaler()
@@ -85,9 +85,9 @@ def load_data(num_clients: int):
 class FCNet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.layer1 = nn.Linear(100, 64)
+        self.layer1 = nn.Linear(50, 32)
         self.act1 = nn.ReLU()
-        self.layer2 = nn.Linear(64, 32)
+        self.layer2 = nn.Linear(32, 32)
         self.act2 = nn.ReLU()
         self.output = nn.Linear(32, 1)
         self.dropout = nn.Dropout(0.25)
