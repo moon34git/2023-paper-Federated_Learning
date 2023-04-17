@@ -13,6 +13,7 @@ import pickle
 import torch.optim as optim
 from tqdm import tqdm
 import flwr as fl
+import torchvision.transforms as transforms
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
@@ -22,7 +23,34 @@ print(
     f"Training on {DEVICE} using PyTorch {torch.__version__} and Flower {fl.__version__}"
 )
 
-NUM_CLIENTS = 2
+NUM_CLIENTS = 5
+
+def load_datasets(num_clients: int):
+    # Download and transform CIFAR-10 (train and test)
+    transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,)),
+         transforms.Lambda(lambda x: torch.flatten(x))]
+    )
+    trainset = MNIST("./data", train=True, download=True, transform=transform)
+    testset = MNIST("./data", train=False, download=True, transform=transform)
+
+    # Split training set into `num_clients` partitions to simulate different local datasets
+    partition_size = len(trainset) // num_clients
+    lengths = [partition_size] * num_clients
+    datasets = random_split(trainset, lengths, torch.Generator().manual_seed(42))
+
+    # Split each partition into train/val and create DataLoader
+    trainloaders = []
+    valloaders = []
+    for ds in datasets:
+        len_val = len(ds) // 10  # 10 % validation set
+        len_train = len(ds) - len_val
+        lengths = [len_train, len_val]
+        ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(42))
+        trainloaders.append(DataLoader(ds_train, batch_size=32, shuffle=True))
+        valloaders.append(DataLoader(ds_val, batch_size=32))
+    testloader = DataLoader(testset, batch_size=32)
+    return trainloaders, valloaders, testloader
 
 def load_data(num_clients: int):
 
@@ -41,7 +69,7 @@ def load_data(num_clients: int):
 
     partition_size = len(trainset) // num_clients
     lengths = [partition_size] * num_clients
-    datasets = random_split(trainset, lengths, torch.Generator().manual_seed(42))
+    datasets = random_split(trainset, lengths, torch.Generator().manual_seed(34))
 
     # Split each partition into train/val and create DataLoader
     trainloaders = []
@@ -50,10 +78,10 @@ def load_data(num_clients: int):
         len_val = len(ds) // 10  # 10 % validation set
         len_train = len(ds) - len_val
         lengths = [len_train, len_val]
-        ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(42))
-        trainloaders.append(DataLoader(ds_train, batch_size=32, shuffle=True))
-        valloaders.append(DataLoader(ds_val, batch_size=32))
-    testloader = DataLoader(testset, batch_size=32)
+        ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(34))
+        trainloaders.append(DataLoader(ds_train, batch_size=64, shuffle=True))
+        valloaders.append(DataLoader(ds_val, batch_size=64))
+    testloader = DataLoader(testset, batch_size=64)
    
     return trainloaders, valloaders, testloader
 
@@ -100,14 +128,14 @@ class Layer(nn.Linear):
                  bias=True, device=None, dtype=None):
         super().__init__(in_features, out_features, bias, device, dtype)
         self.relu = torch.nn.ReLU()
-        self.opt = optim.Adam(self.parameters(), lr=0.03)
+        self.opt = optim.Adam(self.parameters(), lr=0.01)
         self.threshold = 2.0
-        self.num_epochs = 1000
+        self.num_epochs = 200
 
     def forward(self, x):
         x_direction = x / (x.norm(2, 1, keepdim=True) + 1e-4)
-        print(f'x in cuda? : {x.is_cuda}, value of x :{x}, shape of x :{x.shape}')
-        print(f'weight in cuda? : {self.weight.is_cuda}, type of x :{type(self.weight)}, value of x :{self.weight}, shape of x :{self.weight.shape}')
+        # print(f'x in cuda? : {x.is_cuda}, value of x :{x}, shape of x :{x.shape}')
+        # print(f'weight in cuda? : {self.weight.is_cuda}, type of x :{type(self.weight)}, value of x :{self.weight}, shape of x :{self.weight.shape}')
         matmul = torch.mm(x_direction, self.weight.T)
         bias = self.bias.unsqueeze(0)
         output = self.relu(matmul + bias)
@@ -131,13 +159,26 @@ class Layer(nn.Linear):
 
     
 def get_parameters(net) -> List[np.ndarray]:
+    result1 = [val.cpu().numpy() for _, val in net.layers[0].state_dict().items()]
+    result2 = [val.cpu().numpy() for _, val in net.layers[1].state_dict().items()]
+    # print(f'get_parameters[0]: {result1}')
+    # print(f'get_parameters[1]: {result2}')
+    # print(f'summation of get_parameters[0] and get_parameters[1]: {result1 + result2}')
+    # print(f'length: {len(result1 + result2)}')
+    return result1 + result2
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
 
 def set_parameters(net, parameters: List[np.ndarray]):
-    params_dict = zip(net.state_dict().keys(), parameters)
-    state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-    net.load_state_dict(state_dict, strict=True)
-
+    # print(f'set_parameters: {parameters}')
+    # params_dict = zip(net.state_dict().keys(), parameters)
+    # state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
+    # net.load_state_dict(state_dict, strict=True)
+    params_dict1 = zip(net.layers[0].state_dict().keys(), parameters[:2])
+    params_dict2 = zip(net.layers[1].state_dict().keys(), parameters[2:])
+    state_dict1 = OrderedDict({k: torch.Tensor(v) for k, v in params_dict1})
+    state_dict2 = OrderedDict({k: torch.Tensor(v) for k, v in params_dict2})
+    net.layers[0].load_state_dict(state_dict1, strict=True)
+    net.layers[1].load_state_dict(state_dict2, strict=True)
 
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, cid, net, trainloader, valloader):
@@ -159,21 +200,20 @@ class FlowerClient(fl.client.NumPyClient):
         # Read values from config
         server_round = config["server_round"]
         local_epochs = config["local_epochs"]
-
+        # print(f'fit_params: {parameters[0][0][:5]}')
         # Use values provided by the config
         print(f"[Client {self.cid}, round {server_round}] fit, config: {config}")
         set_parameters(self.net, parameters)
         
         x, y = next(iter(self.trainloader))
-        # x, y = x.to(DEVICE), y.to(DEVICE)
         x_pos = overlay_y_on_x(x, y)
         rnd = torch.randperm(x.size(0))
         x_neg = overlay_y_on_x(x, y[rnd])
         self.net.train(x_pos, x_neg)
 
-        print('train error:', 1.0 - self.net.test(x).eq(y).float().mean().item())
+        print('train accuracy:', self.net.test(x).eq(y).float().mean().item())
         # self.net.train(self.net, self.trainloader, epochs=local_epochs)
-
+        # print(f'After fit_params: {get_parameters(self.net)[0][0][:5]}')
         return get_parameters(self.net), len(self.trainloader), {}
 
     def evaluate(self, parameters, config):
@@ -181,7 +221,8 @@ class FlowerClient(fl.client.NumPyClient):
         set_parameters(self.net, parameters)
         x, y = next(iter(self.valloader))
         loss = 0
-        accuracy = 1.0 - self.net.test(x).eq(y).float().mean().item()
+        accuracy = self.net.test(x).eq(y).float().mean().item()
+        print(f"----------------------------------client evaluation loss {loss} / accuracy {accuracy}-----------------------------------")
         return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
 
 def client_fn(cid) -> FlowerClient:
@@ -193,14 +234,16 @@ def client_fn(cid) -> FlowerClient:
 def evaluate(
     server_round: int,
     parameters: fl.common.NDArrays,
-    config: Dict[str, fl.common.Scalar],
+    config: Dict[str, fl.common.Scalar], 
 ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
     net = Net([784, 500, 500]).to(DEVICE)
-    x, y = next(iter(valloaders[0]))
+    # x, y = next(iter(valloaders[0]))
+    x, y = next(iter(testloader))
+    # print(f'evaluate_params: {parameters[0][0][:5]}')
     set_parameters(net, parameters)  # Update model with the latest parameters
     loss = 0
-    accuracy = 1.0 - net.test(x).eq(y).float().mean().item()
-    print(f"Server-side evaluation loss {loss} / accuracy {accuracy}")
+    accuracy = net.test(x).eq(y).float().mean().item()
+    print(f"----------------------------------Server-side evaluation loss {loss} / accuracy {accuracy}-----------------------------------")
     return loss, {"accuracy": accuracy}
 
 def fit_config(server_round: int):
@@ -211,19 +254,21 @@ def fit_config(server_round: int):
     """
     config = {
         "server_round": server_round,  # The current round of federated learning
-        "local_epochs": 1 if server_round < 2 else 2,  #
+        # "local_epochs": 1 if server_round < 2 else 2,  #
+        "local_epochs": 1,
     }
     return config
 
-# trainloaders, valloaders, testloader = load_datasets(NUM_CLIENTS)
-trainloaders, valloaders, testloader = load_data(NUM_CLIENTS)
+trainloaders, valloaders, testloader = load_datasets(NUM_CLIENTS)
+# trainloaders, valloaders, testloader = load_data(NUM_CLIENTS)
 # Create an instance of the model and get the parameters
+
 params = get_parameters(Net([784, 500, 500]))
 
 # Pass parameters to the Strategy for server-side parameter initialization
 strategy = fl.server.strategy.FedAvg(
-    fraction_fit=1,
-    fraction_evaluate=2,
+    fraction_fit=0.5,
+    fraction_evaluate=0.5,
     min_fit_clients=2,
     min_evaluate_clients=2,
     min_available_clients=NUM_CLIENTS,
@@ -241,7 +286,7 @@ if DEVICE.type == "cuda":
 fl.simulation.start_simulation(
     client_fn=client_fn,
     num_clients=NUM_CLIENTS,
-    config=fl.server.ServerConfig(num_rounds=3),  # Just three rounds
+    config=fl.server.ServerConfig(num_rounds = 3),  # Just three rounds
     strategy=strategy,
     client_resources=client_resources,
 )

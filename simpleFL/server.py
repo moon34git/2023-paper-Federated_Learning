@@ -1,7 +1,6 @@
 import flwr as fl
 import warnings
 warnings.simplefilter(action = 'ignore', category = FutureWarning)
-from typing import Callable, Dict, Optional, Tuple
 import sys
 import numpy as np
 import torch

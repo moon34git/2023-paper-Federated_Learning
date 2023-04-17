@@ -80,14 +80,10 @@ class Layer(nn.Linear):
         self.num_epochs = 1000
 
     def forward(self, x):
-        print('-------------------------------------------------Layer forward Start-------------------------------------------------')
         x_direction = x / (x.norm(2, 1, keepdim=True) + 1e-4)
-        print(f'x: {x}, x_direction: {x_direction.shape}, weight: {self.weight.T.shape}, bias: {self.bias}')
         matmul = torch.matmul(x_direction, self.weight.T)
-        print(f'matmul: {matmul}')
         bias = self.bias.unsqueeze(0)
         output = self.relu(matmul + bias)
-        print('-------------------------------------------------Layer forward Complete-------------------------------------------------')
         return output
 
     def train(self, x_pos, x_neg):
@@ -110,7 +106,6 @@ class Layer(nn.Linear):
 if __name__ == "__main__":
     torch.manual_seed(1234)
     train_loader, test_loader = MNIST_loaders()
-
     net = Net([784, 500, 500]).to(DEVICE)
     x, y = next(iter(train_loader))
     x, y = x.to(DEVICE), y.to(DEVICE)
@@ -118,9 +113,9 @@ if __name__ == "__main__":
     rnd = torch.randperm(x.size(0))
     x_neg = overlay_y_on_x(x, y[rnd])
     
-    
+    print(f'before_train_params: {net.layers[0].weight}')
     net.train(x_pos, x_neg)
-
+    print(f'after_train_params: {net.layers[0].weight}')
     print('train error:', 1.0 - net.predict(x).eq(y).float().mean().item())
 
     x_te, y_te = next(iter(test_loader))

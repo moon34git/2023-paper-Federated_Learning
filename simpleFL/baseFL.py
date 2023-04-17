@@ -22,32 +22,6 @@ print(
 
 NUM_CLIENTS = 2
 
-def load_datasets(num_clients: int):
-    # Download and transform CIFAR-10 (train and test)
-    transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-    )
-    trainset = CIFAR10("./data", train=True, download=True, transform=transform)
-    testset = CIFAR10("./data", train=False, download=True, transform=transform)
-
-    # Split training set into `num_clients` partitions to simulate different local datasets
-    partition_size = len(trainset) // num_clients
-    lengths = [partition_size] * num_clients
-    datasets = random_split(trainset, lengths, torch.Generator().manual_seed(42))
-
-    # Split each partition into train/val and create DataLoader
-    trainloaders = []
-    valloaders = []
-    for ds in datasets:
-        len_val = len(ds) // 10  # 10 % validation set
-        len_train = len(ds) - len_val
-        lengths = [len_train, len_val]
-        ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(42))
-        trainloaders.append(DataLoader(ds_train, batch_size=32, shuffle=True))
-        valloaders.append(DataLoader(ds_val, batch_size=32))
-    testloader = DataLoader(testset, batch_size=32)
-    return trainloaders, valloaders, testloader
-
 def load_data(num_clients: int):
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/trainset5000.pickle', 'rb') as trs:
         trainset = pickle.load(trs)
@@ -173,6 +147,7 @@ class FlowerClient(fl.client.NumPyClient):
 
         # Use values provided by the config
         print(f"[Client {self.cid}, round {server_round}] fit, config: {config}")
+        print(f'fit_parameters: {parameters[0][0][:5]}')
         set_parameters(self.net, parameters)
         train(self.net, self.trainloader, epochs=local_epochs)
 
@@ -197,6 +172,7 @@ def evaluate(
 ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
     net = Net_former().to(DEVICE)
     valloader = valloaders[0]
+    print(f'evaluate_parameters: {parameters[0][0][:5]}')
     set_parameters(net, parameters)  # Update model with the latest parameters
     loss, accuracy = test(net, valloader)
     print(f"Server-side evaluation loss {loss} / accuracy {accuracy}")
