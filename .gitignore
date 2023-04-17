@@ -130,3 +130,5 @@ dmypy.json
 Data/acoustic.pickle
 Data/combined.pickle
 Data/seismic.pickle
+Data/mhealth_raw_data.pickle
+Data/IEMOCAP_features.pkl
