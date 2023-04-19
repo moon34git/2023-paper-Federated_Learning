@@ -20,16 +20,18 @@ DEVICE = torch.device("cuda")  # Try "cuda" to train on GPU
 print(
     f"Training on {DEVICE} using PyTorch {torch.__version__} and Flower {fl.__version__}"
 )
+print('Current cuda device:', torch.cuda.current_device())
+print('Count of using GPUs:', torch.cuda.device_count())
 
-NUM_CLIENTS = 3
+NUM_CLIENTS = 10
 
 def load_data(num_clients: int):
     # Download and transform CIFAR-10 (train and test)
-    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/acoustic.pickle', 'rb') as f:
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/combined.pickle', 'rb') as f:
         data1 = pickle.load(f)
-    data1 = data1.iloc[:5000]
+    data1 = data1.iloc[:2000]
 
-    X = data1[[str(x) for x in range(50)]]
+    X = data1[[str(x) for x in range(100)]]
     y = data1['class']
 
     scaler = StandardScaler()
@@ -66,31 +68,13 @@ def load_data(num_clients: int):
     testloader = DataLoader(torchvisionType_for_test, batch_size = 32)
     return trainloaders, valloaders, testloader
     
-# class FCNet(nn.Module):
-#     def __init__(self):
-#         super().__init__()
-#         self.layer1 = nn.Linear(50, 32)
-#         self.act1 = nn.ReLU()
-#         self.layer2 = nn.Linear(32, 32)
-#         self.act2 = nn.ReLU()
-#         self.output = nn.Linear(32, 1)
-#         self.dropout = nn.Dropout(0.25)
-#         self.sigmoid = nn.Sigmoid()
- 
-#     def forward(self, x):
-#         x = self.act1(self.layer1(x))
-#         x = self.dropout(x)
-#         x = self.act2(self.layer2(x))
-#         x = self.dropout(x)
-#         x = self.sigmoid(self.output(x))
-#         return x
-    
+
 class FCNet16(nn.Module):
     def __init__(self):
         super().__init__()
-        self.layer1 = nn.Linear(50, 16)
+        self.layer1 = nn.Linear(100, 32)
         self.act1 = nn.ReLU()
-        self.layer2 = nn.Linear(16, 32)
+        self.layer2 = nn.Linear(32, 32)
         self.act2 = nn.ReLU()
         self.layer3 = nn.Linear(32, 16)
         self.act3 = nn.ReLU()
@@ -139,6 +123,7 @@ def train(net, trainloader, epochs: int):
         epoch_loss /= len(trainloader.dataset)
         epoch_acc = correct / total
         print(f"Epoch {epoch+1}: train loss {epoch_loss}, accuracy {epoch_acc}, correct {correct} total {total}")
+
 
 def test(net, testloader):
     """Evaluate the network on the entire test set."""
@@ -216,10 +201,9 @@ def evaluate(
     set_parameters(net, parameters)  # Update model with the latest parameters
     loss, accuracy = test(net, valloader)
     print(f"Server-side evaluation loss {loss} / accuracy {accuracy}")
-
-    if server_round == 3:
-        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/weights/acoustic_weights.pickle', 'wb') as f:
-            pickle.dump(parameters, f)
+    # if server_round == 3:
+    #     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/weights/combined_weights.pickle', 'wb') as f:
+    #         pickle.dump(parameters, f)
     
     return loss, {"accuracy": accuracy}
 
@@ -232,7 +216,7 @@ def fit_config(server_round: int):
 
     config = {
         "server_round": server_round,  # The current round of federated learning
-        "local_epochs": 1,  #
+        "local_epochs": 3,  #
     }
     return config
 
@@ -243,11 +227,11 @@ params = get_parameters(FCNet16())
 
 # Pass parameters to the Strategy for server-side parameter initialization
 strategy = fl.server.strategy.FedAvg(
-    fraction_fit=0.8,
-    fraction_evaluate= 2,
-    min_fit_clients= 2,
-    min_evaluate_clients=2,
-    min_available_clients=2,
+    fraction_fit=0.6,
+    fraction_evaluate= 6,
+    min_fit_clients= 6,
+    min_evaluate_clients=6,
+    min_available_clients=6,
     initial_parameters=fl.common.ndarrays_to_parameters(params),
     evaluate_fn=evaluate,
     on_fit_config_fn = fit_config,
@@ -262,7 +246,7 @@ if DEVICE.type == "cuda":
 fl.simulation.start_simulation(
     client_fn=client_fn,
     num_clients=NUM_CLIENTS,
-    config=fl.server.ServerConfig(num_rounds=3),  # Just three rounds
+    config=fl.server.ServerConfig(num_rounds=5),  # Just three rounds
     strategy=strategy,
     client_resources=client_resources,
 )

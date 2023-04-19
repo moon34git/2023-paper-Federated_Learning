@@ -27,7 +27,7 @@ def load_data(num_clients: int):
     # Download and transform CIFAR-10 (train and test)
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/seismic.pickle', 'rb') as f:
         data1 = pickle.load(f)
-    data1 = data1.iloc[:6000]
+    data1 = data1.iloc[:10000]
 
     X = data1[[str(x) for x in range(50)]]
     y = data1['class']
@@ -40,7 +40,7 @@ def load_data(num_clients: int):
     X = torch.tensor(X, dtype = torch.float32)
     y = torch.tensor(y, dtype = torch.long)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 34)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 34)
 
     torchvisionType_for_trainVal = []
     for i in range(len(X_train)):
@@ -217,9 +217,9 @@ def evaluate(
     set_parameters(net, parameters)  # Update model with the latest parameters
     loss, accuracy = test(net, valloader)
     print(f"Server-side evaluation loss {loss} / accuracy {accuracy}")
-    print(f'parameters: {parameters[0]}')
-    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/weights/seismic_weights.pickle', 'wb') as f:
-        pickle.dump(parameters, f)
+    if server_round == 3:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/weights/seismic_weights.pickle', 'wb') as f:
+            pickle.dump(parameters, f)
     return loss, {"accuracy": accuracy}
 
 def fit_config(server_round: int):
