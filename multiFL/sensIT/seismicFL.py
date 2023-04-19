@@ -21,7 +21,7 @@ print(
     f"Training on {DEVICE} using PyTorch {torch.__version__} and Flower {fl.__version__}"
 )
 
-NUM_CLIENTS = 5
+NUM_CLIENTS = 3
 
 def load_data(num_clients: int):
     # Download and transform CIFAR-10 (train and test)
@@ -66,14 +66,35 @@ def load_data(num_clients: int):
     testloader = DataLoader(torchvisionType_for_test, batch_size = 32)
     return trainloaders, valloaders, testloader
     
-class FCNet(nn.Module):
+# class FCNet(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#         self.layer1 = nn.Linear(50, 32)
+#         self.act1 = nn.ReLU()
+#         self.layer2 = nn.Linear(32, 32)
+#         self.act2 = nn.ReLU()
+#         self.output = nn.Linear(32, 1)
+#         self.dropout = nn.Dropout(0.25)
+#         self.sigmoid = nn.Sigmoid()
+ 
+#     def forward(self, x):
+#         x = self.act1(self.layer1(x))
+#         x = self.dropout(x)
+#         x = self.act2(self.layer2(x))
+#         x = self.dropout(x)
+#         x = self.sigmoid(self.output(x))
+#         return x
+    
+class FCNet16(nn.Module):
     def __init__(self):
         super().__init__()
-        self.layer1 = nn.Linear(50, 32)
+        self.layer1 = nn.Linear(50, 16)
         self.act1 = nn.ReLU()
-        self.layer2 = nn.Linear(32, 32)
+        self.layer2 = nn.Linear(16, 32)
         self.act2 = nn.ReLU()
-        self.output = nn.Linear(32, 1)
+        self.layer3 = nn.Linear(32, 16)
+        self.act3 = nn.ReLU()
+        self.output = nn.Linear(16, 1)
         self.dropout = nn.Dropout(0.25)
         self.sigmoid = nn.Sigmoid()
  
@@ -81,6 +102,8 @@ class FCNet(nn.Module):
         x = self.act1(self.layer1(x))
         x = self.dropout(x)
         x = self.act2(self.layer2(x))
+        x = self.dropout(x)
+        x = self.act3(self.layer3(x))
         x = self.dropout(x)
         x = self.sigmoid(self.output(x))
         return x
@@ -179,7 +202,7 @@ class FlowerClient(fl.client.NumPyClient):
         return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
 
 def client_fn(cid) -> FlowerClient:
-    net = FCNet().to(DEVICE)
+    net = FCNet16().to(DEVICE)
     trainloader = trainloaders[int(cid)]
     valloader = valloaders[int(cid)]
     return FlowerClient(cid, net, trainloader, valloader)
@@ -189,11 +212,14 @@ def evaluate(
     parameters: fl.common.NDArrays,
     config: Dict[str, fl.common.Scalar],
 ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
-    net = FCNet().to(DEVICE)
+    net = FCNet16().to(DEVICE)
     valloader = valloaders[0]
     set_parameters(net, parameters)  # Update model with the latest parameters
     loss, accuracy = test(net, valloader)
     print(f"Server-side evaluation loss {loss} / accuracy {accuracy}")
+    print(f'parameters: {parameters[0]}')
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/weights/seismic_weights.pickle', 'wb') as f:
+        pickle.dump(parameters, f)
     return loss, {"accuracy": accuracy}
 
 def fit_config(server_round: int):
@@ -212,15 +238,15 @@ def fit_config(server_round: int):
 # trainloaders, valloaders, testloader = load_datasets(NUM_CLIENTS)
 trainloaders, valloaders, testloader = load_data(NUM_CLIENTS)
 # Create an instance of the model and get the parameters
-params = get_parameters(FCNet())
+params = get_parameters(FCNet16())
 
 # Pass parameters to the Strategy for server-side parameter initialization
 strategy = fl.server.strategy.FedAvg(
-    fraction_fit=0.5,
-    fraction_evaluate= 3,
-    min_fit_clients= 3,
-    min_evaluate_clients=3,
-    min_available_clients=3,
+    fraction_fit=0.8,
+    fraction_evaluate= 2,
+    min_fit_clients= 2,
+    min_evaluate_clients=2,
+    min_available_clients=2,
     initial_parameters=fl.common.ndarrays_to_parameters(params),
     evaluate_fn=evaluate,
     on_fit_config_fn = fit_config,
