@@ -13,6 +13,8 @@ import pickle
 from tqdm import tqdm
 import flwr as fl
 from sklearn.metrics import roc_auc_score
+import ray
+torch.manual_seed(1)
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
@@ -21,13 +23,13 @@ print(
     f"Training on {DEVICE} using PyTorch {torch.__version__} and Flower {fl.__version__}"
 )
 
-NUM_CLIENTS = 3
+NUM_CLIENTS = 5
 
 def load_data(num_clients: int):
     # Download and transform CIFAR-10 (train and test)
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/combined.pickle', 'rb') as f:
         data1 = pickle.load(f)
-    data1 = data1.iloc[:5000]
+    data1 = data1.iloc[:2500]
 
     X = data1[[str(x) for x in range(100)]]
     y = data1['class']
@@ -40,7 +42,7 @@ def load_data(num_clients: int):
     X = torch.tensor(X, dtype = torch.float32)
     y = torch.tensor(y, dtype = torch.long)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 34)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.1, random_state = 34)
 
     torchvisionType_for_trainVal = []
     for i in range(len(X_train)):
@@ -120,7 +122,7 @@ def set_parameters(net, parameters: List[np.ndarray]):
 def train(net, trainloader, epochs: int):
     """Train the network on the training set."""
     criterion = torch.nn.BCELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.003)
     net.train()
     for epoch in range(epochs):
         correct, total, epoch_loss = 0, 0, 0.0
@@ -138,7 +140,7 @@ def train(net, trainloader, epochs: int):
             correct += (predicted == y).sum()
         epoch_loss /= len(trainloader.dataset)
         epoch_acc = correct / total
-        print(f"Epoch {epoch+1}: train loss {epoch_loss}, accuracy {epoch_acc}, correct {correct} total {total}")
+        print(f"Epoch {epoch+1}: train loss {epoch_loss:.4f}, accuracy {epoch_acc:.4f}, correct {correct} total {total}")
 
 
 def test(net, testloader):
@@ -162,7 +164,7 @@ def test(net, testloader):
     
     auc = roc_auc_score(y_label, y_pred)
 
-    print(f'total : {total}, correct: {correct}, AUC: {auc}')
+    print(f'total : {total}, correct: {correct}, AUC: {auc:.4f}')
     loss /= len(testloader.dataset)
     accuracy = correct / total
     return loss, accuracy
@@ -216,7 +218,7 @@ def evaluate(
     valloader = valloaders[0]
     set_parameters(net, parameters)  # Update model with the latest parameters
     loss, accuracy = test(net, valloader)
-    print(f"Server-side evaluation loss {loss} / accuracy {accuracy}")
+    print(f"Server-side evaluation loss {loss:.4f} / accuracy {accuracy:.4f}")
     if server_round == 3:
         with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/weights/combined_weights.pickle', 'wb') as f:
             pickle.dump(parameters, f)
@@ -243,11 +245,11 @@ params = get_parameters(FCNet16())
 
 # Pass parameters to the Strategy for server-side parameter initialization
 strategy = fl.server.strategy.FedAvg(
-    fraction_fit=0.8,
-    fraction_evaluate= 2,
-    min_fit_clients= 2,
-    min_evaluate_clients=2,
-    min_available_clients=2,
+    fraction_fit=1,
+    fraction_evaluate= 5,
+    min_fit_clients= 5,
+    min_evaluate_clients=5,
+    min_available_clients=5,
     initial_parameters=fl.common.ndarrays_to_parameters(params),
     evaluate_fn=evaluate,
     on_fit_config_fn = fit_config,
