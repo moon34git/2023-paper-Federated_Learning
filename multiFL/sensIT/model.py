@@ -27,9 +27,9 @@ print(
 
 
 def load_data(num_clients: int):
-    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/seismic.pickle', 'rb') as f:
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/sensIT/seismic.pickle', 'rb') as f:
         data1 = pickle.load(f)
-    data1 = data1.iloc[:5000]
+    data1 = data1.iloc[:2500]
 
     X = data1[[str(x) for x in range(50)]]
     y = data1['class']
@@ -42,7 +42,7 @@ def load_data(num_clients: int):
     X = torch.tensor(X, dtype = torch.float32)
     y = torch.tensor(y, dtype = torch.long)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 34)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.1, random_state = 34)
 
     torchvisionType_for_trainVal = []
     for i in range(len(X_train)):
@@ -145,10 +145,9 @@ def test(net, testloader):
 
 
 if __name__ == "__main__":
-    hyperparameters = [0.001, 0.002, 0.003, 0.1]
-    trainloaders, valloaders, testloader = load_data(3)
-    for i in hyperparameters:
-        net = FCNet16().to(DEVICE)
-        print(i, '--------------------------------')
-        train(net, trainloaders[0], 3, lr = i)
-        test(net, testloader)
+
+    trainloaders, valloaders, testloader = load_data(5)
+
+    net = FCNet16().to(DEVICE)
+    train(net, trainloaders[0], 3, lr = 0.003)
+    test(net, valloaders[0])

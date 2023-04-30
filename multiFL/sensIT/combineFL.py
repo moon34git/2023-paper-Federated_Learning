@@ -27,7 +27,7 @@ NUM_CLIENTS = 5
 
 def load_data(num_clients: int):
     # Download and transform CIFAR-10 (train and test)
-    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/combined.pickle', 'rb') as f:
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/sensIT/combined.pickle', 'rb') as f:
         data1 = pickle.load(f)
     data1 = data1.iloc[:2500]
 
@@ -220,7 +220,7 @@ def evaluate(
     loss, accuracy = test(net, valloader)
     print(f"Server-side evaluation loss {loss:.4f} / accuracy {accuracy:.4f}")
     if server_round == 3:
-        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/weights/combined_weights.pickle', 'wb') as f:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/unbalanced_weights/combined_weights.pickle', 'wb') as f:
             pickle.dump(parameters, f)
     
     return loss, {"accuracy": accuracy}

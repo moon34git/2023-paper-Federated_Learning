@@ -27,9 +27,9 @@ NUM_CLIENTS = 5
 
 def load_data(num_clients: int):
     # Download and transform CIFAR-10 (train and test)
-    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/acoustic.pickle', 'rb') as f:
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/sensIT/acoustic.pickle', 'rb') as f:
         data1 = pickle.load(f)
-    data1 = data1.iloc[:2500]
+    data1 = data1.iloc[:1500]
 
     X = data1[[str(x) for x in range(50)]]
     y = data1['class']
@@ -201,7 +201,7 @@ def evaluate(
     print(f"Server-side evaluation loss {loss:.4f} / accuracy {accuracy:.4f}")
 
     if server_round == 3:
-        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/weights/acoustic_weights.pickle', 'wb') as f:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/unbalanced_weights/acoustic_weights.pickle', 'wb') as f:
             pickle.dump(parameters, f)
     
     return loss, {"accuracy": accuracy}

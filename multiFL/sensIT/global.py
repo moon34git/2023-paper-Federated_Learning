@@ -20,7 +20,7 @@ def load_data(num_clients: int, type):
     else:
         iter = 50
 
-    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/' + type + '.pickle', 'rb') as f:
+    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/sensIT/' + type + '.pickle', 'rb') as f:
         data1 = pickle.load(f)
     data1 = data1.iloc[:2500]
 
@@ -136,7 +136,7 @@ def test(net, testloader):
 def get_parameter(modals):
     parameters = []
     for i in modals:
-        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/weights/'+i+'_weights.pickle', 'rb') as f:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/sensIT/unbalanced_weights/'+i+'_weights.pickle', 'rb') as f:
             data = pickle.load(f)
             parameters.append(data)
 
