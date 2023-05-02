@@ -23,7 +23,7 @@ print(
     f"Training on {DEVICE} using PyTorch {torch.__version__} and Flower {fl.__version__}"
 )
 
-NUM_CLIENTS = 5
+NUM_CLIENTS = 3
 
 def load_data(num_clients: int):
     # Download and transform CIFAR-10 (train and test)
@@ -246,10 +246,10 @@ params = get_parameters(FCNet16())
 # Pass parameters to the Strategy for server-side parameter initialization
 strategy = fl.server.strategy.FedAvg(
     fraction_fit=1,
-    fraction_evaluate= 5,
-    min_fit_clients= 5,
-    min_evaluate_clients=5,
-    min_available_clients=5,
+    fraction_evaluate= 3,
+    min_fit_clients= 3,
+    min_evaluate_clients=3,
+    min_available_clients=3,
     initial_parameters=fl.common.ndarrays_to_parameters(params),
     evaluate_fn=evaluate,
     on_fit_config_fn = fit_config,

@@ -161,3 +161,13 @@ multiFL/sensIT/unbalanced_weights/seismic_weights.pickle
 multiFL/sensIT/weights/acoustic_weights.pickle
 multiFL/sensIT/weights/combined_weights.pickle
 multiFL/sensIT/weights/seismic_weights.pickle
+Data/mHealth/y_ts_modal.pickle
+Data/mHealth/y_tr_modal.pickle
+Data/mHealth/X_ts_modal3.pickle
+Data/mHealth/X_ts_modal2.pickle
+Data/mHealth/X_ts_modal1.pickle
+Data/mHealth/X_tr_modal3.pickle
+Data/mHealth/X_tr_modal2.pickle
+Data/mHealth/X_tr_modal1.pickle
+state_dict.pickle
+Data/mHealth/final_mHealth.pickle

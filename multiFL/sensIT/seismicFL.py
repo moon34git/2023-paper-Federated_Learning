@@ -22,13 +22,13 @@ print(
     f"Training on {DEVICE} using PyTorch {torch.__version__} and Flower {fl.__version__}"
 )
 
-NUM_CLIENTS = 5
+NUM_CLIENTS = 3
 
 def load_data(num_clients: int):
     # Download and transform CIFAR-10 (train and test)
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/sensIT/seismic.pickle', 'rb') as f:
         data1 = pickle.load(f)
-    data1 = data1.iloc[:1000]
+    data1 = data1.iloc[:900]
 
     X = data1[[str(x) for x in range(50)]]
     y = data1['class']
@@ -245,10 +245,10 @@ params = get_parameters(FCNet16())
 # Pass parameters to the Strategy for server-side parameter initialization
 strategy = fl.server.strategy.FedAvg(
     fraction_fit=1,
-    fraction_evaluate= 5,
-    min_fit_clients= 5,
-    min_evaluate_clients=5,
-    min_available_clients=5,
+    fraction_evaluate= 3,
+    min_fit_clients= 3,
+    min_evaluate_clients=3,
+    min_available_clients=3,
     initial_parameters=fl.common.ndarrays_to_parameters(params),
     evaluate_fn=evaluate,
     on_fit_config_fn = fit_config,

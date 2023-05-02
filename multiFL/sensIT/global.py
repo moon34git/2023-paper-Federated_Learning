@@ -22,7 +22,7 @@ def load_data(num_clients: int, type):
 
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/sensIT/' + type + '.pickle', 'rb') as f:
         data1 = pickle.load(f)
-    data1 = data1.iloc[:2500]
+    data1 = data1.iloc[20000:20270]
 
     X = data1[[str(x) for x in range(iter)]]
     y = data1['class']
@@ -161,7 +161,7 @@ def model(version, type, DEVICE):
     net = version.to(DEVICE)
 
     modals = ['acoustic', 'seismic', 'combined']
-    trainloaders, valloaders, testloader = load_data(5, type)
+    trainloaders, valloaders, testloader = load_data(3, type)
     net_State_dict = net.state_dict().keys()
     agg = get_parameter(modals)
 
@@ -181,4 +181,4 @@ if __name__ == "__main__":
     os.environ['CUDA_VISIBLE_DEVICES'] = '2'
     DEVICE = torch.device("cuda")  # Try "cuda" to train on GPU
     
-    model(FCNet100(), 'combined', DEVICE)
+    model(FCNet50(), 'acoustic', DEVICE)
