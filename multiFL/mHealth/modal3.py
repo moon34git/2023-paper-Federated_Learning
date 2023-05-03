@@ -49,8 +49,8 @@ def load_data(num_clients: int):
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/y_ts_modal.pickle', 'rb') as f:
         y_ts_modal = pickle.load(f)
 
-    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 32, 16)
-    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 32, 16)  
+    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 64, 32)
+    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 64, 32)  
 
     X_train = np.transpose(X_tr_modal1, (0, 2, 1))
     X_test = np.transpose(X_ts_modal1, (0, 2, 1))
@@ -82,17 +82,17 @@ def load_data(num_clients: int):
     m3ts_index = []
 
     for i in range(12):
-        m1tr_index += np.random.choice(ytr[i], 72, replace=False).tolist() # Each client(3) trains 144 samples
-        m2tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
-        m3tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
+        m1tr_index += np.random.choice(ytr[i], 108, replace=False).tolist() # Each client(3) trains 144 samples
+        m2tr_index += np.random.choice(ytr[i], 108, replace=False).tolist()
+        m3tr_index += np.random.choice(ytr[i], 36, replace=False).tolist()
 
-        m1v_index += np.random.choice(ytr[i], 24, replace=False).tolist()   # Each client validates 48 samples
-        m2v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
-        m3v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
+        m1v_index += np.random.choice(ytr[i], 36, replace=False).tolist()   # Each client validates 48 samples
+        m2v_index += np.random.choice(ytr[i], 36, replace=False).tolist()
+        m3v_index += np.random.choice(ytr[i], 36, replace=False).tolist()
 
-        m1ts_index += np.random.choice(yts[i], 24, replace=False).tolist()  # Each client tests 60 samples
-        m2ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
-        m3ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
+        m1ts_index += np.random.choice(yts[i], 36, replace=False).tolist()  # Each client tests 60 samples
+        m2ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
+        m3ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
 
     m1tr_index = random.sample(m1tr_index, len(m1tr_index))
     m2tr_index = random.sample(m2tr_index, len(m2tr_index))

@@ -31,19 +31,18 @@ def load_data(type):
     if type == 'modal1':
         with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_tr_modal1.pickle', 'rb') as f:
             X_tr_modal1 = pickle.load(f)
-
         with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_ts_modal1.pickle', 'rb') as f:
             X_ts_modal1 = pickle.load(f)
+
     elif type == 'modal2':
         with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_tr_modal2.pickle', 'rb') as f:
             X_tr_modal1 = pickle.load(f)
-
         with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_ts_modal2.pickle', 'rb') as f:
             X_ts_modal1 = pickle.load(f)
+
     else:
         with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_tr_modal3.pickle', 'rb') as f:
             X_tr_modal1 = pickle.load(f)
-
         with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_ts_modal3.pickle', 'rb') as f:
             X_ts_modal1 = pickle.load(f)
 
@@ -53,8 +52,8 @@ def load_data(type):
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/y_ts_modal.pickle', 'rb') as f:
         y_ts_modal = pickle.load(f)
 
-    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 32, 16)
-    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 32, 16)  
+    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 64, 32)
+    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 64, 32)  
 
     X_train = np.transpose(X_tr_modal1, (0, 2, 1))
     X_test = np.transpose(X_ts_modal1, (0, 2, 1))
@@ -86,17 +85,9 @@ def load_data(type):
     m3ts_index = []
 
     for i in range(12):
-        m1tr_index += np.random.choice(ytr[i], 72, replace=False).tolist() # Each client(3) trains 144 samples
-        m2tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
-        m3tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
-
-        m1v_index += np.random.choice(ytr[i], 24, replace=False).tolist()   # Each client validates 48 samples
-        m2v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
-        m3v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
-
-        m1ts_index += np.random.choice(yts[i], 24, replace=False).tolist()  # Each client tests 60 samples
-        m2ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
-        m3ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
+        m1ts_index += np.random.choice(yts[i], 36, replace=False).tolist()  # Each client tests 60 samples
+        m2ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
+        m3ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
 
     m1tr_index = random.sample(m1tr_index, len(m1tr_index))
     m2tr_index = random.sample(m2tr_index, len(m2tr_index))
@@ -164,10 +155,10 @@ class ConvLSTM12(nn.Module):
 class ConvLSTM6(nn.Module):
     def __init__(self):
         super(ConvLSTM6, self).__init__()
-        self.conv1 = nn.Conv1d(in_channels=6, out_channels=32, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm1d(32)
+        self.conv1 = nn.Conv1d(in_channels=6, out_channels=16, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm1d(16)
         self.relu1 = nn.ReLU()
-        self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv1d(in_channels=16, out_channels=64, kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm1d(64)
         self.relu2 = nn.ReLU()
         self.pool = nn.MaxPool1d(kernel_size=2)
@@ -212,7 +203,7 @@ def test(net, X_test, y_test):
         loss = criterion(y_pred_test, y_test.squeeze())
         # test_loss.append(loss)
         test_acc = accuracy_score(y_test.cpu(), y_pred_test.cpu().argmax(1))
-        print(f"Test accuracy: {test_acc}")
+        print(f"Test accuracy: {test_acc:.4f}")
     return float(loss), test_acc
 
 def get_parameter():
@@ -225,8 +216,8 @@ def get_parameter():
     avg_params = []
 
     for i in range(22, 26):
-        avg_params.append((parameters[0][i] + parameters[1][i] + parameters[2][i]) / 3)
-    
+        avg_params.append((parameters[0][i] * 2 + parameters[1][i] * 1 + parameters[2][i] * 1) / 3)
+
     for i in range(22, 26):
         parameters[0][i] = avg_params[i-22]
         parameters[1][i] = avg_params[i-22]
@@ -267,6 +258,8 @@ if __name__ == "__main__":
 
     os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
     os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-    DEVICE = torch.device("cuda") 
-    for i in ['modal1', 'modal2', 'modal3']:
-        model(i, DEVICE)
+    DEVICE = torch.device("cuda")
+    for j in range(3): 
+        for i in ['modal1', 'modal2', 'modal3']:
+            model(i, DEVICE)
+        print('------------------')

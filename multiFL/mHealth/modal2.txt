@@ -1,0 +1,23 @@
+Training on cuda using PyTorch 1.13.1+cu117 and Flower 1.3.0
+Server-side evaluation loss 2.5649 / accuracy 0.0833
+[2m[36m(launch_and_fit pid=26819)[0m [Client 1, round 1] fit, config: {'server_round': 1, 'local_epochs': 30}
+[2m[36m(launch_and_fit pid=26819)[0m Epoch 30: train loss 2.3686
+[2m[36m(launch_and_fit pid=27332)[0m [Client 0, round 1] fit, config: {'server_round': 1, 'local_epochs': 30}
+[2m[36m(launch_and_fit pid=27332)[0m Epoch 30: train loss 2.3586
+[2m[36m(launch_and_fit pid=27599)[0m [Client 2, round 1] fit, config: {'server_round': 1, 'local_epochs': 30}
+Server-side evaluation loss 2.3491 / accuracy 0.4074
+[2m[36m(launch_and_fit pid=27599)[0m Epoch 30: train loss 2.3570
+[2m[36m(launch_and_fit pid=27922)[0m [Client 0, round 2] fit, config: {'server_round': 2, 'local_epochs': 30}
+[2m[36m(launch_and_fit pid=27922)[0m Epoch 30: train loss 2.1240
+[2m[36m(launch_and_fit pid=28292)[0m [Client 2, round 2] fit, config: {'server_round': 2, 'local_epochs': 30}
+[2m[36m(launch_and_fit pid=28292)[0m Epoch 30: train loss 2.1207
+[2m[36m(launch_and_fit pid=28707)[0m [Client 1, round 2] fit, config: {'server_round': 2, 'local_epochs': 30}
+Server-side evaluation loss 2.1208 / accuracy 0.6597
+[2m[36m(launch_and_fit pid=28707)[0m Epoch 30: train loss 2.1161
+[2m[36m(launch_and_fit pid=29074)[0m [Client 1, round 3] fit, config: {'server_round': 3, 'local_epochs': 30}
+[2m[36m(launch_and_fit pid=29074)[0m Epoch 30: train loss 1.9366
+[2m[36m(launch_and_fit pid=29432)[0m [Client 2, round 3] fit, config: {'server_round': 3, 'local_epochs': 30}
+[2m[36m(launch_and_fit pid=29432)[0m Epoch 30: train loss 1.9277
+[2m[36m(launch_and_fit pid=29748)[0m [Client 0, round 3] fit, config: {'server_round': 3, 'local_epochs': 30}
+[2m[36m(launch_and_fit pid=29748)[0m Epoch 30: train loss 1.9494
+Server-side evaluation loss 1.9261 / accuracy 0.7778
