@@ -17,7 +17,8 @@ from sklearn.metrics import roc_auc_score, accuracy_score
 import pandas as pd
 import random
 torch.manual_seed(1)
-
+np.random.seed(1)
+random.seed(1)
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
@@ -49,8 +50,8 @@ def load_data(num_clients: int):
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/y_ts_modal.pickle', 'rb') as f:
         y_ts_modal = pickle.load(f)
 
-    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 100, 50)
-    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 100, 50)  
+    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 32, 16)
+    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 32, 16)  
 
     X_train = np.transpose(X_tr_modal1, (0, 2, 1))
     X_test = np.transpose(X_ts_modal1, (0, 2, 1))
@@ -90,9 +91,9 @@ def load_data(num_clients: int):
         m2v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
         m3v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
 
-        m1ts_index += np.random.choice(yts[i], 30, replace=False).tolist()
-        m2ts_index += np.random.choice(yts[i], 30, replace=False).tolist()
-        m3ts_index += np.random.choice(yts[i], 30, replace=False).tolist()
+        m1ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
+        m2ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
+        m3ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
 
     m1tr_index = random.sample(m1tr_index, len(m1tr_index))
     m2tr_index = random.sample(m2tr_index, len(m2tr_index))
@@ -246,6 +247,9 @@ def evaluate(
     set_parameters(net, parameters)  # Update model with the latest parameters
     loss, accuracy = test(net, X_test, y_test)
     print(f"Server-side evaluation loss {loss:.4f} / accuracy {accuracy:.4f}")
+    if server_round == 3:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/unbalanced_weights/modal2_weights.pickle', 'wb') as f:
+            pickle.dump(parameters, f)
     return float(loss), {"accuracy": accuracy}
 
 def fit_config(server_round: int):

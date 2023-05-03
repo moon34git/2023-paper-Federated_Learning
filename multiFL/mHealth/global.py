@@ -12,21 +12,12 @@ from sklearn.preprocessing import StandardScaler
 import pickle
 from tqdm import tqdm
 import flwr as fl
-from scipy import stats
-from sklearn.metrics import roc_auc_score, accuracy_score
-import pandas as pd
 import random
-torch.manual_seed(1)
-np.random.seed(1)
+import pandas as pd
+from sklearn.metrics import roc_auc_score, accuracy_score
+from scipy import stats
 
-os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-DEVICE = torch.device("cuda")  # Try "cuda" to train on GPU
-print(
-    f"Training on {DEVICE} using PyTorch {torch.__version__} and Flower {fl.__version__}"
-)
 
-NUM_CLIENTS = 3
 def create_dataset(X, y, time_steps, step=1):
     Xs, ys = [], []
     for i in range(0, len(X) - time_steps, step):
@@ -36,12 +27,25 @@ def create_dataset(X, y, time_steps, step=1):
         ys.append(stats.mode(labels)[0][0])
     return np.array(Xs), np.array(ys).reshape(-1, 1)
     
-def load_data(num_clients: int):
-    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_tr_modal3.pickle', 'rb') as f:
-        X_tr_modal1 = pickle.load(f)
+def load_data(type):
+    if type == 'modal1':
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_tr_modal1.pickle', 'rb') as f:
+            X_tr_modal1 = pickle.load(f)
 
-    with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_ts_modal3.pickle', 'rb') as f:
-        X_ts_modal1 = pickle.load(f)
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_ts_modal1.pickle', 'rb') as f:
+            X_ts_modal1 = pickle.load(f)
+    elif type == 'modal2':
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_tr_modal2.pickle', 'rb') as f:
+            X_tr_modal1 = pickle.load(f)
+
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_ts_modal2.pickle', 'rb') as f:
+            X_ts_modal1 = pickle.load(f)
+    else:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_tr_modal3.pickle', 'rb') as f:
+            X_tr_modal1 = pickle.load(f)
+
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/X_ts_modal3.pickle', 'rb') as f:
+            X_ts_modal1 = pickle.load(f)
 
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/y_tr_modal.pickle', 'rb') as f:
         y_tr_modal = pickle.load(f)
@@ -116,7 +120,7 @@ def load_data(num_clients: int):
 
     return X_trains, y_trains, X_vals, y_vals, X_test, y_test
 
-        
+
 class ConvLSTM12(nn.Module):
     def __init__(self):
         super(ConvLSTM12, self).__init__()
@@ -157,30 +161,45 @@ class ConvLSTM12(nn.Module):
         x = self.softmax(x)
         return x
     
-def get_parameters(net) -> List[np.ndarray]:
-    return [val.cpu().numpy() for _, val in net.state_dict().items()]
+class ConvLSTM6(nn.Module):
+    def __init__(self):
+        super(ConvLSTM6, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels=6, out_channels=32, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm1d(32)
+        self.relu1 = nn.ReLU()
+        self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm1d(64)
+        self.relu2 = nn.ReLU()
+        self.pool = nn.MaxPool1d(kernel_size=2)
+        self.lstm = nn.LSTM(input_size=64, hidden_size=64, num_layers=2, batch_first=True)
+        self.fc1 = nn.Linear(in_features=64, out_features=128)
+        self.relu3 = nn.ReLU()
+        self.fc2 = nn.Linear(in_features=128, out_features=13)
+        self.softmax = nn.Softmax(dim=1)
 
-def set_parameters(net, parameters: List[np.ndarray]):
-    params_dict = zip(net.state_dict().keys(), parameters)
-    state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-    state_dict['bn1.num_batches_tracked'] = torch.tensor(0)
-    state_dict['bn2.num_batches_tracked'] = torch.tensor(0)
-    net.load_state_dict(state_dict, strict=True)
-    # net.load_state_dict(net.state_dict(), strict=True)
+    def forward(self, x):
+        # print(f"Round {self.round} initialized")
+        # Convolutional layers
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu1(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu2(x)
+        x = self.pool(x)
 
-def train(net, X_train, y_train, epochs: int):
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
-    for epoch in tqdm(range(epochs)):
-        net.train()
-        net.zero_grad()
-        X_train = X_train.to(DEVICE)
-        y_train = y_train.to(DEVICE)
-        y_pred = net(X_train)
-        loss = criterion(y_pred, y_train.squeeze())
-        loss.backward()
-        optimizer.step()
-    print(f"Epoch {epoch+1}: train loss {loss:.4f}")
+        # LSTM layer
+        x = x.permute(0, 2, 1)  # Change from (batch_size, seq_len, num_features) to (batch_size, num_features, seq_len)
+        x, _ = self.lstm(x)
+        x = x[:, -1, :]  # Extract the last timestep output
+
+
+        # Fully connected layers
+        x = self.fc1(x)
+        x = self.relu3(x)
+        x = self.fc2(x)
+        x = self.softmax(x)
+        return x
 
 def test(net, X_test, y_test):
     criterion = torch.nn.CrossEntropyLoss()
@@ -193,106 +212,61 @@ def test(net, X_test, y_test):
         loss = criterion(y_pred_test, y_test.squeeze())
         # test_loss.append(loss)
         test_acc = accuracy_score(y_test.cpu(), y_pred_test.cpu().argmax(1))
+        print(f"Test accuracy: {test_acc}")
     return float(loss), test_acc
-        
-class FlowerClient(fl.client.NumPyClient):
-    def __init__(self, cid, net, X_train, y_train, X_test, y_test):
-        self.cid = cid
-        self.net = net
-        self.X_train = X_train
-        self.y_train = y_train
-        self.X_test = X_test
-        self.y_test = y_test
 
-    def get_parameters(self, config):
-        print(f"[Client {self.cid}] get_parameters")
-        return get_parameters(self.net)
+def get_parameter():
+    parameters = []
+    for i in range(1, 4):
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/unbalanced_weights/modal'+str(i)+'_weights.pickle', 'rb') as f:
+            data = pickle.load(f)
+            parameters.append(data)
 
-    def fit(self, parameters, config):
+    avg_params = []
 
-        # print(f"[Client {self.cid}] fit, config: {config}")
-        # set_parameters(self.net, parameters)
-        # train(self.net, self.trainloader, epochs=1)
+    for i in range(22, 26):
+        avg_params.append((parameters[0][i] + parameters[1][i] + parameters[2][i]) / 3)
+    
+    for i in range(22, 26):
+        parameters[0][i] = avg_params[i-22]
+        parameters[1][i] = avg_params[i-22]
+        parameters[2][i] = avg_params[i-22]
 
-        # Read values from config
-        server_round = config["server_round"]
-        local_epochs = config["local_epochs"]
+    return parameters
 
-        # Use values provided by the config
-        print(f"[Client {self.cid}, round {server_round}] fit, config: {config}")
-        set_parameters(self.net, parameters)
-        train(self.net, self.X_train, self.y_train, epochs=local_epochs)
+def set_parameters(net, net_State_dict ,parameters: List[np.ndarray]):
+    params_dict = zip(net_State_dict, parameters)
+    state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
+    state_dict['bn1.num_batches_tracked'] = torch.tensor(0)
+    state_dict['bn2.num_batches_tracked'] = torch.tensor(0)
+    net.load_state_dict(state_dict, strict = True)
 
-        return get_parameters(self.net), len(self.X_train), {}
+def model(type, DEVICE):
+    if type == 'modal1':
+        net = ConvLSTM6().to(DEVICE)
+    elif type == 'modal2':
+        net = ConvLSTM6().to(DEVICE)
+    else:
+        net = ConvLSTM12().to(DEVICE)
 
-    def evaluate(self, parameters, config):
-        print(f"[Client {self.cid}] evaluate, config: {config}")
-        set_parameters(self.net, parameters)
-        loss, accuracy = test(self.net, self.X_val, self.y_val)
-        return float(loss), len(self.X_val), {"accuracy": float(accuracy)}
+    X_trains, y_trains, X_vals, y_vals, X_test, y_test = load_data(type)
+    agg = get_parameter()
+    net_State_dict = net.state_dict().keys()
 
-def client_fn(cid) -> FlowerClient:
-    net = ConvLSTM12().to(DEVICE)
-    X_train, y_train = X_trains[int(cid)], y_trains[int(cid)]
-    X_val, y_val = X_vals[int(cid)], y_vals[int(cid)]
-    return FlowerClient(cid, net, X_train, y_train, X_val, y_val)
+    if type == 'modal1':
+        set_parameters(net, net_State_dict, agg[0])
+    elif type == 'modal2':
+        set_parameters(net, net_State_dict, agg[1])
+    else:
+        set_parameters(net, net_State_dict, agg[2])
 
-def evaluate(
-    server_round: int,
-    parameters: fl.common.NDArrays,
-    config: Dict[str, fl.common.Scalar],
-) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
-    net = ConvLSTM12().to(DEVICE)
-    set_parameters(net, parameters)  # Update model with the latest parameters
-    loss, accuracy = test(net, X_test, y_test)
-    print(f"Server-side evaluation loss {loss:.4f} / accuracy {accuracy:.4f}")
+    test(net, X_test, y_test)
 
-    if server_round == 3:
-        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/unbalanced_weights/modal3_weights.pickle', 'wb') as f:
-            pickle.dump(parameters, f)
+if __name__ == "__main__":
+    torch.manual_seed(1)
 
-    return float(loss), {"accuracy": accuracy}
-
-def fit_config(server_round: int):
-    """Return training configuration dict for each round.
-
-    Perform two rounds of training with one local epoch, increase to two local
-    epochs afterwards.
-    """
-    config = {
-        "server_round": server_round,  # The current round of federated learning
-        "local_epochs": 30 
-    }
-    return config
-
-# trainloaders, valloaders, testloader = load_datasets(NUM_CLIENTS)
-X_trains, y_trains, X_vals, y_vals, X_test, y_test = load_data(NUM_CLIENTS)
-# Create an instance of the model and get the parameters
-params = get_parameters(ConvLSTM12())
-
-# Pass parameters to the Strategy for server-side parameter initialization
-strategy = fl.server.strategy.FedAvg(
-    fraction_fit=1,
-    fraction_evaluate= 3,
-    min_fit_clients= 3,
-    min_evaluate_clients=3,
-    min_available_clients=3,
-    initial_parameters=fl.common.ndarrays_to_parameters(params),
-    evaluate_fn=evaluate,
-    on_fit_config_fn = fit_config,
-)
-
-# Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)
-client_resources = None
-if DEVICE.type == "cuda":
-    client_resources = {"num_gpus": 1}
-
-# Start simulation
-fl.simulation.start_simulation(
-    client_fn=client_fn,
-    num_clients=NUM_CLIENTS,
-    config=fl.server.ServerConfig(num_rounds=3),  # Just three rounds
-    strategy=strategy,
-    client_resources=client_resources,
-)
-
+    os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+    DEVICE = torch.device("cuda") 
+    for i in ['modal1', 'modal2', 'modal3']:
+        model(i, DEVICE)

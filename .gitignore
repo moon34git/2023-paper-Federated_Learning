@@ -171,3 +171,9 @@ Data/mHealth/X_tr_modal2.pickle
 Data/mHealth/X_tr_modal1.pickle
 state_dict.pickle
 Data/mHealth/final_mHealth.pickle
+multiFL/mHealth/balanced_weights/modal1_weights.pickle
+multiFL/mHealth/balanced_weights/modal2_weights.pickle
+multiFL/mHealth/balanced_weights/modal3_weights.pickle
+multiFL/mHealth/unbalanced_weights/modal1_weights.pickle
+multiFL/mHealth/unbalanced_weights/modal2_weights.pickle
+multiFL/mHealth/unbalanced_weights/modal3_weights.pickle
