@@ -82,17 +82,17 @@ def load_data(num_clients: int):
     m3ts_index = []
 
     for i in range(12):
-        m1tr_index += np.random.choice(ytr[i], 12, replace=False).tolist()
-        m2tr_index += np.random.choice(ytr[i], 12, replace=False).tolist()
-        m3tr_index += np.random.choice(ytr[i], 12, replace=False).tolist()
+        m1tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
+        m2tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
+        m3tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
 
-        m1v_index += np.random.choice(ytr[i], 4, replace=False).tolist()
-        m2v_index += np.random.choice(ytr[i], 4, replace=False).tolist()
-        m3v_index += np.random.choice(ytr[i], 4, replace=False).tolist()
+        m1v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
+        m2v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
+        m3v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
 
-        m1ts_index += np.random.choice(yts[i], 5, replace=False).tolist()
-        m2ts_index += np.random.choice(yts[i], 5, replace=False).tolist()
-        m3ts_index += np.random.choice(yts[i], 5, replace=False).tolist()
+        m1ts_index += np.random.choice(yts[i], 30, replace=False).tolist()
+        m2ts_index += np.random.choice(yts[i], 30, replace=False).tolist()
+        m3ts_index += np.random.choice(yts[i], 30, replace=False).tolist()
 
     m1tr_index = random.sample(m1tr_index, len(m1tr_index))
     m2tr_index = random.sample(m2tr_index, len(m2tr_index))
@@ -256,7 +256,7 @@ def fit_config(server_round: int):
     """
     config = {
         "server_round": server_round,  # The current round of federated learning
-        "local_epochs": 100 
+        "local_epochs": 30 
     }
     return config
 

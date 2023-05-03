@@ -27,6 +27,7 @@ print(
 )
 
 NUM_CLIENTS = 3
+
 def create_dataset(X, y, time_steps, step=1):
     Xs, ys = [], []
     for i in range(0, len(X) - time_steps, step):
@@ -49,7 +50,7 @@ def load_data(num_clients: int):
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/y_ts_modal.pickle', 'rb') as f:
         y_ts_modal = pickle.load(f)
 
-    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 100, 50)
+    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 100, 50) #Batch : 100, Step : 50
     X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 100, 50)  
 
     X_train = np.transpose(X_tr_modal1, (0, 2, 1))
@@ -60,13 +61,6 @@ def load_data(num_clients: int):
 
     X_test = torch.from_numpy(X_test).float().to(DEVICE)
     y_test = torch.from_numpy(y_ts_modal).long().to(DEVICE)
-
-    # X_trains = [X_train[:100], X_train[100:200], X_train[200:300]]
-    # y_trains = [y_train[:100], y_train[100:200], y_train[200:300]]
-    # X_vals = [X_train[300:330], X_train[330:360], X_train[360:390]]
-    # y_vals = [y_train[300:330], y_train[330:360], y_train[360:390]]
-    # X_test = X_test[:50]
-    # y_test = y_test[:50]
 
     yvalues = pd.Series(y_train.squeeze().cpu().numpy())
     yvaluess = pd.Series(y_test.squeeze().cpu().numpy())
@@ -89,17 +83,17 @@ def load_data(num_clients: int):
     m3ts_index = []
 
     for i in range(12):
-        m1tr_index += np.random.choice(ytr[i], 12, replace=False).tolist()
-        m2tr_index += np.random.choice(ytr[i], 12, replace=False).tolist()
-        m3tr_index += np.random.choice(ytr[i], 12, replace=False).tolist()
+        m1tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
+        m2tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
+        m3tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
 
-        m1v_index += np.random.choice(ytr[i], 4, replace=False).tolist()
-        m2v_index += np.random.choice(ytr[i], 4, replace=False).tolist()
-        m3v_index += np.random.choice(ytr[i], 4, replace=False).tolist()
+        m1v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
+        m2v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
+        m3v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
 
-        m1ts_index += np.random.choice(yts[i], 5, replace=False).tolist()
-        m2ts_index += np.random.choice(yts[i], 5, replace=False).tolist()
-        m3ts_index += np.random.choice(yts[i], 5, replace=False).tolist()
+        m1ts_index += np.random.choice(yts[i], 30, replace=False).tolist()
+        m2ts_index += np.random.choice(yts[i], 30, replace=False).tolist()
+        m3ts_index += np.random.choice(yts[i], 30, replace=False).tolist()
 
     m1tr_index = random.sample(m1tr_index, len(m1tr_index))
     m2tr_index = random.sample(m2tr_index, len(m2tr_index))
@@ -173,7 +167,6 @@ def set_parameters(net, parameters: List[np.ndarray]):
     state_dict['bn1.num_batches_tracked'] = torch.tensor(0)
     state_dict['bn2.num_batches_tracked'] = torch.tensor(0)
     net.load_state_dict(state_dict, strict=True)
-    # net.load_state_dict(net.state_dict(), strict=True)
 
 def train(net, X_train, y_train, epochs: int):
     criterion = nn.CrossEntropyLoss()
@@ -263,7 +256,7 @@ def fit_config(server_round: int):
     """
     config = {
         "server_round": server_round,  # The current round of federated learning
-        "local_epochs": 100 
+        "local_epochs": 30 
     }
     return config
 
