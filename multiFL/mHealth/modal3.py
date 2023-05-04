@@ -80,19 +80,20 @@ def load_data(num_clients: int):
     m1ts_index = []
     m2ts_index = []
     m3ts_index = []
-
+    a = 70
+    b = 70 // 3
     for i in range(12):
-        m1tr_index += np.random.choice(ytr[i], 108, replace=False).tolist() # Each client(3) trains 144 samples
-        m2tr_index += np.random.choice(ytr[i], 108, replace=False).tolist()
-        m3tr_index += np.random.choice(ytr[i], 36, replace=False).tolist()
+        m1tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
+        m2tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
+        m3tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
 
-        m1v_index += np.random.choice(ytr[i], 36, replace=False).tolist()   # Each client validates 48 samples
-        m2v_index += np.random.choice(ytr[i], 36, replace=False).tolist()
-        m3v_index += np.random.choice(ytr[i], 36, replace=False).tolist()
+        m1v_index += np.random.choice(ytr[i], b, replace=False).tolist()
+        m2v_index += np.random.choice(ytr[i], b, replace=False).tolist()
+        m3v_index += np.random.choice(ytr[i], b, replace=False).tolist()
 
-        m1ts_index += np.random.choice(yts[i], 36, replace=False).tolist()  # Each client tests 60 samples
-        m2ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
-        m3ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
+        m1ts_index += np.random.choice(yts[i], b, replace=False).tolist()
+        m2ts_index += np.random.choice(yts[i], b, replace=False).tolist()
+        m3ts_index += np.random.choice(yts[i], b, replace=False).tolist()
 
     m1tr_index = random.sample(m1tr_index, len(m1tr_index))
     m2tr_index = random.sample(m2tr_index, len(m2tr_index))
@@ -248,7 +249,7 @@ def evaluate(
     print(f"Server-side evaluation loss {loss:.4f} / accuracy {accuracy:.4f}")
 
     if server_round == 3:
-        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/unbalanced_weights/modal3_weights.pickle', 'wb') as f:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/balanced_weights/modal3_weights.pickle', 'wb') as f:
             pickle.dump(parameters, f)
 
     return float(loss), {"accuracy": accuracy}

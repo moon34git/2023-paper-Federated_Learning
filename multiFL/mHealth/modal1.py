@@ -83,18 +83,20 @@ def load_data(num_clients: int):
     m2ts_index = []
     m3ts_index = []
 
+    a = 30
+    b = 30 // 3
     for i in range(12):
-        m1tr_index += np.random.choice(ytr[i], 72, replace=False).tolist() 
-        m2tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
-        m3tr_index += np.random.choice(ytr[i], 72, replace=False).tolist()
+        m1tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
+        m2tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
+        m3tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
 
-        m1v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
-        m2v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
-        m3v_index += np.random.choice(ytr[i], 24, replace=False).tolist()
+        m1v_index += np.random.choice(ytr[i], b, replace=False).tolist()
+        m2v_index += np.random.choice(ytr[i], b, replace=False).tolist()
+        m3v_index += np.random.choice(ytr[i], b, replace=False).tolist()
 
-        m1ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
-        m2ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
-        m3ts_index += np.random.choice(yts[i], 24, replace=False).tolist()
+        m1ts_index += np.random.choice(yts[i], b, replace=False).tolist()
+        m2ts_index += np.random.choice(yts[i], b, replace=False).tolist()
+        m3ts_index += np.random.choice(yts[i], b, replace=False).tolist()
 
     m1tr_index = random.sample(m1tr_index, len(m1tr_index))
     m2tr_index = random.sample(m2tr_index, len(m2tr_index))
@@ -289,7 +291,7 @@ def evaluate(
     print(f"Server-side evaluation loss {loss:.4f} / accuracy {accuracy:.4f}")
 
     if server_round == 3:
-        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/unbalanced_weights/modal1_weights.pickle', 'wb') as f:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/balanced_weights/modal1_weights.pickle', 'wb') as f:
             pickle.dump(parameters, f)
     
     return float(loss), {"accuracy": accuracy}

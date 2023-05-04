@@ -82,18 +82,20 @@ def load_data(num_clients: int):
     m2ts_index = []
     m3ts_index = []
 
+    a = 100
+    b = 100 // 3
     for i in range(12):
-        m1tr_index += np.random.choice(ytr[i], 108, replace=False).tolist()
-        m2tr_index += np.random.choice(ytr[i], 108, replace=False).tolist()
-        m3tr_index += np.random.choice(ytr[i], 108, replace=False).tolist()
+        m1tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
+        m2tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
+        m3tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
 
-        m1v_index += np.random.choice(ytr[i], 36, replace=False).tolist()
-        m2v_index += np.random.choice(ytr[i], 36, replace=False).tolist()
-        m3v_index += np.random.choice(ytr[i], 36, replace=False).tolist()
+        m1v_index += np.random.choice(ytr[i], b, replace=False).tolist()
+        m2v_index += np.random.choice(ytr[i], b, replace=False).tolist()
+        m3v_index += np.random.choice(ytr[i], b, replace=False).tolist()
 
-        m1ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
-        m2ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
-        m3ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
+        m1ts_index += np.random.choice(yts[i], b, replace=False).tolist()
+        m2ts_index += np.random.choice(yts[i], b, replace=False).tolist()
+        m3ts_index += np.random.choice(yts[i], b, replace=False).tolist()
 
     m1tr_index = random.sample(m1tr_index, len(m1tr_index))
     m2tr_index = random.sample(m2tr_index, len(m2tr_index))
@@ -116,47 +118,6 @@ def load_data(num_clients: int):
 
 
     return X_trains, y_trains, X_vals, y_vals, X_test, y_test
-
-        
-# class ConvLSTM6(nn.Module):
-#     def __init__(self):
-#         super(ConvLSTM6, self).__init__()
-#         self.conv1 = nn.Conv1d(in_channels=6, out_channels=32, kernel_size=3, padding=1)
-#         self.bn1 = nn.BatchNorm1d(32)
-#         self.relu1 = nn.ReLU()
-#         self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
-#         self.bn2 = nn.BatchNorm1d(64)
-#         self.relu2 = nn.ReLU()
-#         self.pool = nn.MaxPool1d(kernel_size=2)
-#         self.lstm = nn.LSTM(input_size=64, hidden_size=64, num_layers=2, batch_first=True)
-#         self.fc1 = nn.Linear(in_features=64, out_features=128)
-#         self.relu3 = nn.ReLU()
-#         self.fc2 = nn.Linear(in_features=128, out_features=13)
-#         self.softmax = nn.Softmax(dim=1)
-
-#     def forward(self, x):
-#         # print(f"Round {self.round} initialized")
-#         # Convolutional layers
-#         x = self.conv1(x)
-#         x = self.bn1(x)
-#         x = self.relu1(x)
-#         x = self.conv2(x)
-#         x = self.bn2(x)
-#         x = self.relu2(x)
-#         x = self.pool(x)
-
-#         # LSTM layer
-#         x = x.permute(0, 2, 1)  # Change from (batch_size, seq_len, num_features) to (batch_size, num_features, seq_len)
-#         x, _ = self.lstm(x)
-#         x = x[:, -1, :]  # Extract the last timestep output
-
-
-#         # Fully connected layers
-#         x = self.fc1(x)
-#         x = self.relu3(x)
-#         x = self.fc2(x)
-#         x = self.softmax(x)
-#         return x
 
 class ConvLSTM6(nn.Module):
     def __init__(self):
@@ -288,7 +249,7 @@ def evaluate(
     loss, accuracy = test(net, X_test, y_test)
     print(f"Server-side evaluation loss {loss:.4f} / accuracy {accuracy:.4f}")
     if server_round == 3:
-        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/unbalanced_weights/modal2_weights.pickle', 'wb') as f:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/balanced_weights/modal2_weights.pickle', 'wb') as f:
             pickle.dump(parameters, f)
     return float(loss), {"accuracy": accuracy}
 

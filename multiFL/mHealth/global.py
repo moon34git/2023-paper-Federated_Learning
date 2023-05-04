@@ -85,9 +85,9 @@ def load_data(type):
     m3ts_index = []
 
     for i in range(12):
-        m1ts_index += np.random.choice(yts[i], 36, replace=False).tolist()  # Each client tests 60 samples
-        m2ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
-        m3ts_index += np.random.choice(yts[i], 36, replace=False).tolist()
+        m1ts_index += np.random.choice(yts[i], 7, replace=False).tolist()  # Each client tests 60 samples
+        m2ts_index += np.random.choice(yts[i], 7, replace=False).tolist()
+        m3ts_index += np.random.choice(yts[i], 7, replace=False).tolist()
 
     m1tr_index = random.sample(m1tr_index, len(m1tr_index))
     m2tr_index = random.sample(m2tr_index, len(m2tr_index))
@@ -209,14 +209,14 @@ def test(net, X_test, y_test):
 def get_parameter():
     parameters = []
     for i in range(1, 4):
-        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/unbalanced_weights/modal'+str(i)+'_weights.pickle', 'rb') as f:
+        with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/multiFL/mHealth/balanced_weights/modal'+str(i)+'_weights.pickle', 'rb') as f:
             data = pickle.load(f)
             parameters.append(data)
 
     avg_params = []
 
     for i in range(22, 26):
-        avg_params.append((parameters[0][i] * 2 + parameters[1][i] * 1 + parameters[2][i] * 1) / 3)
+        avg_params.append((parameters[0][i] * 1 + parameters[1][i] * 1 + parameters[2][i] * 1) / 3)
 
     for i in range(22, 26):
         parameters[0][i] = avg_params[i-22]
