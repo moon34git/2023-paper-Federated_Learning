@@ -52,8 +52,8 @@ def load_data(type):
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/y_ts_modal.pickle', 'rb') as f:
         y_ts_modal = pickle.load(f)
 
-    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 64, 32)
-    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 64, 32)  
+    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 32, 16)
+    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 32, 16)  
 
     X_train = np.transpose(X_tr_modal1, (0, 2, 1))
     X_test = np.transpose(X_ts_modal1, (0, 2, 1))
@@ -251,7 +251,8 @@ def model(type, DEVICE):
     else:
         set_parameters(net, net_State_dict, agg[2])
 
-    test(net, X_test, y_test)
+    loss, acc = test(net, X_test, y_test) ## 다시 실험 - acc 평균 내기
+    return acc
 
 if __name__ == "__main__":
     torch.manual_seed(1)
@@ -259,7 +260,12 @@ if __name__ == "__main__":
     os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
     os.environ['CUDA_VISIBLE_DEVICES'] = '2'
     DEVICE = torch.device("cuda")
-    for j in range(3): 
+    accs = []
+    for j in range(5): 
         for i in ['modal1', 'modal2', 'modal3']:
-            model(i, DEVICE)
+            accs.append(model(i, DEVICE))
         print('------------------')
+    
+    print((accs[0] + accs[3] + accs[6] + accs[9] + accs[12]) / 5)
+    print((accs[1] + accs[4] + accs[7] + accs[10] + accs[13]) / 5)
+    print((accs[2] + accs[5] + accs[8] + accs[11] + accs[14]) / 5)

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-python modal1.py > ./log/modal1.txt
-python modal2.py > ./log/modal2.txt
-python modal3.py > ./log/modal3.txt
-python global.py > ./log/global.txt
+python modal3.py > ./final/c10/modal3/modal3_un.txt
+python modal3.py > ./final/c10/modal3/modal33_un.txt
+python modal3.py > ./final/c10/modal3/modal333_un.txt
+
 
 

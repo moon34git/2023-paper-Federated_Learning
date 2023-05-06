@@ -50,8 +50,8 @@ def load_data(num_clients: int):
     with open('/home/jhmoon/venvFL/2023-paper-Federated_Learning/Data/mHealth/y_ts_modal.pickle', 'rb') as f:
         y_ts_modal = pickle.load(f)
 
-    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 64, 32)
-    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 64, 32)  
+    X_tr_modal1, y_tr_modal = create_dataset(X_tr_modal1, y_tr_modal, 32, 16)
+    X_ts_modal1, y_ts_modal = create_dataset(X_ts_modal1, y_ts_modal, 32, 16)  
 
     X_train = np.transpose(X_tr_modal1, (0, 2, 1))
     X_test = np.transpose(X_ts_modal1, (0, 2, 1))
@@ -82,8 +82,8 @@ def load_data(num_clients: int):
     m2ts_index = []
     m3ts_index = []
 
-    a = 100
-    b = 100 // 3
+    a = 20
+    b = 20 // 3
     for i in range(12):
         m1tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
         m2tr_index += np.random.choice(ytr[i], a, replace=False).tolist()
