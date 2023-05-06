@@ -211,3 +211,15 @@ multiFL/mHealth/log/steps(64,32)/modal-balance(20,20,20)/modal2_weights.pickle
 multiFL/mHealth/log/steps(64,32)/modal-balance(20,20,20)/modal2.txt
 multiFL/mHealth/log/steps(64,32)/modal-balance(20,20,20)/modal3_weights.pickle
 multiFL/mHealth/log/steps(64,32)/modal-balance(20,20,20)/modal3.txt
+multiFL/mHealth/log/m1_10/m1_10.txt
+multiFL/mHealth/log/m1_10/modal1_weights.pickle
+multiFL/mHealth/log/m1_20/m1_20.txt
+multiFL/mHealth/log/m1_20/modal1_weights.pickle
+multiFL/mHealth/log/m2_10/m2_10.txt
+multiFL/mHealth/log/m2_10/modal2_weights.pickle
+multiFL/mHealth/log/m2_20/m2_20.txt
+multiFL/mHealth/log/m2_20/modal2_weights.pickle
+multiFL/mHealth/log/m3_10/m3_10.txt
+multiFL/mHealth/log/m3_10/modal3_weights.pickle
+multiFL/mHealth/log/m3_20/m3_20.txt
+multiFL/mHealth/log/m3_20/modal3_weights.pickle
